@@ -131,7 +131,7 @@ const ArrangementMasterDropdown = ({ onNavigate }: { onNavigate: (v: string) => 
             <button className="flex items-center gap-1 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-acid px-4 py-2">
                 编曲大师 <svg className={`w-3 h-3 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
             </button>
-            <div className={`absolute top-full right-0 w-56 bg-[#0a0a0a] border border-white/10 shadow-xl transition-all duration-200 z-50 ${isOpen ? 'opacity-100 translate-y-0 visible' : 'opacity-0 translate-y-2 invisible'}`}>
+            <div className={`absolute top-full right-0 w-64 bg-[#0a0a0a] border border-white/10 shadow-xl transition-all duration-200 z-50 ${isOpen ? 'opacity-100 translate-y-0 visible' : 'opacity-0 translate-y-2 invisible'}`}>
                 <div className="p-1">
                     <button onClick={() => onNavigate('dashboard')} className="flex items-center gap-3 w-full p-3 hover:bg-white/5 text-left group/item">
                         <div className="w-8 h-8 rounded bg-acid/10 flex items-center justify-center text-acid group-hover/item:bg-acid group-hover/item:text-black transition-colors">
@@ -139,16 +139,27 @@ const ArrangementMasterDropdown = ({ onNavigate }: { onNavigate: (v: string) => 
                         </div>
                         <div>
                             <div className="text-xs font-bold text-white uppercase">音乐工坊</div>
-                            <div className="text-[10px] text-slate-500">Audio Lab</div>
+                            <div className="text-[10px] text-slate-500">Audio Lab (上传/分析)</div>
                         </div>
                     </button>
+
+                    <button onClick={() => onNavigate('dashboard')} className="flex items-center gap-3 w-full p-3 hover:bg-white/5 text-left group/item">
+                         <div className="w-8 h-8 rounded bg-lime-500/10 flex items-center justify-center text-lime-400 group-hover/item:bg-lime-400 group-hover/item:text-black transition-colors">
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" /></svg>
+                        </div>
+                        <div>
+                            <div className="text-xs font-bold text-white uppercase">复刻构筑台</div>
+                            <div className="text-[10px] text-slate-500">Reproduction Console (需分析)</div>
+                        </div>
+                    </button>
+
                     <button onClick={() => onNavigate('custom')} className="flex items-center gap-3 w-full p-3 hover:bg-white/5 text-left group/item">
                          <div className="w-8 h-8 rounded bg-neon/10 flex items-center justify-center text-neon group-hover/item:bg-neon group-hover/item:text-black transition-colors">
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                         </div>
                         <div>
                             <div className="text-xs font-bold text-white uppercase">创意实验室</div>
-                            <div className="text-[10px] text-slate-500">Creative V5</div>
+                            <div className="text-[10px] text-slate-500">Creative V5 (风格生成)</div>
                         </div>
                     </button>
                 </div>
