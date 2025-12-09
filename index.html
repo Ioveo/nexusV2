@@ -4,7 +4,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>NEXUS | Acid Cyberpunk</title>
+    <title>NEXUS | Audio Architecture</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='0' fill='%23000'/%3E%3Cpath d='M20 80 L50 20 L80 80' stroke='%23ccff00' stroke-width='8' fill='none'/%3E%3C/svg%3E">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -27,6 +27,7 @@
               'marquee-reverse': 'marquee-reverse 25s linear infinite',
               'glitch': 'glitch 1s linear infinite',
               'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+              'spin-slow': 'spin 10s linear infinite',
             },
             keyframes: {
               marquee: {
@@ -80,17 +81,19 @@
         -webkit-text-stroke: 1px var(--acid);
         color: transparent;
       }
+      .clip-path-slant {
+        clip-path: polygon(10% 0, 100% 0, 90% 100%, 0% 100%);
+      }
     </style>
 <script type="importmap">
 {
   "imports": {
-    "react": "https://aistudiocdn.com/react@^18.3.1",
-    "react-dom/client": "https://aistudiocdn.com/react-dom@^18.3.1/client",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^0.1.0",
+    "react": "https://aistudiocdn.com/react@^19.2.1",
     "react/": "https://aistudiocdn.com/react@^19.2.1/",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/",
     "vite": "https://aistudiocdn.com/vite@^7.2.7",
-    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.2"
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.2",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.32.0"
   }
 }
 </script>
