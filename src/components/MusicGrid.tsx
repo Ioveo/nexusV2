@@ -1,13 +1,66 @@
+// src/components/MusicGrid.tsx
 
 import React from 'react';
 import { GalleryTrack } from '../types';
 
 const getRandomTags = (id: string) => {
-    const TAGS = ['HI-RES', 'MASTER', 'FLAC', 'DOLBY', 'STEREO'];
+    const TAGS = ['母带级', 'Hi-Res', '全景声', '无损', '杜比音效'];
     const index = id.charCodeAt(0) % TAGS.length;
     return TAGS[index];
 };
 
+const NeonChip = ({ text, active }: { text: string, active?: boolean }) => (
+    <div className={`px-2 py-0.5 rounded text-[9px] font-bold font-mono uppercase tracking-wide border transition-all shadow-[0_0_10px_rgba(0,0,0,0.5)] ${active ? 'bg-acid text-black border-acid shadow-[0_0_10px_#ccff00]' : 'bg-black/60 text-slate-300 border-white/20'}`}>
+        {text}
+    </div>
+);
+
+// --- HOME WIDGET (Cassette Style) ---
+export const HomeMusicWidget = ({ tracks, onPlay, playingId }: { tracks: GalleryTrack[], onPlay: (id:string)=>void, playingId: string|null }) => {
+    if (!tracks.length) return null;
+    return (
+        <div className="w-full overflow-x-auto no-scrollbar pb-8">
+            <div className="flex gap-6 min-w-max px-2">
+                {tracks.slice(0, 8).map(t => {
+                    const isPlaying = playingId === t.id;
+                    const tag = getRandomTags(t.id);
+                    return (
+                        <div 
+                            key={t.id} 
+                            onClick={() => onPlay(t.id)}
+                            className="w-[280px] group cursor-pointer relative"
+                        >
+                            {/* Cassette Shape */}
+                            <div className={`bg-[#111] border rounded-xl p-3 relative overflow-hidden transition-all duration-300 ${isPlaying ? 'border-acid shadow-[0_0_20px_rgba(204,255,0,0.2)] scale-105 z-10' : 'border-white/10 hover:border-acid/50 hover:-translate-y-2'}`}>
+                                <div className="flex gap-3 mb-3">
+                                    <img src={t.coverUrl} className={`w-20 h-20 rounded bg-slate-800 object-cover ${isPlaying ? 'animate-spin-slow' : ''}`} />
+                                    <div className="flex-1 flex flex-col justify-center min-w-0">
+                                        <div className="flex gap-1 mb-1">
+                                            <NeonChip text={tag} active={isPlaying} />
+                                        </div>
+                                        <h4 className={`font-bold text-sm truncate leading-tight mb-0.5 ${isPlaying ? 'text-acid' : 'text-white'}`}>{t.title}</h4>
+                                        <p className="text-xs text-slate-500 font-mono truncate">{t.artist}</p>
+                                    </div>
+                                </div>
+                                {/* Deco lines */}
+                                <div className="w-full h-1 bg-white/5 rounded-full mb-1">
+                                    <div className={`h-full bg-acid/30 rounded-full transition-all duration-[20s] ease-linear ${isPlaying ? 'w-full' : 'w-0'}`}></div>
+                                </div>
+                                <div className="flex justify-between text-[9px] font-mono text-slate-600 uppercase">
+                                    <span>SIDE A</span>
+                                    <span>NEXUS REC</span>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
+
+
+// --- MAIN PAGE GRID ---
 export const MusicGrid: React.FC<{ tracks: GalleryTrack[], onPlay: (id:string)=>void, playingId: string|null }> = ({ tracks, onPlay, playingId }) => {
     if (tracks.length === 0) return null;
 
@@ -28,7 +81,7 @@ export const MusicGrid: React.FC<{ tracks: GalleryTrack[], onPlay: (id:string)=>
                 
                 <div className="absolute inset-0 p-12 flex flex-col justify-center items-start z-10">
                     <div className="inline-block px-3 py-1 bg-acid text-black text-xs font-bold uppercase tracking-widest mb-4 rounded">
-                        Track of the Week
+                        本周主打 (Track of the Week)
                     </div>
                     <h1 className="text-6xl font-display font-black text-white uppercase mb-2 tracking-tighter">
                         {heroTrack.title}
@@ -49,7 +102,7 @@ export const MusicGrid: React.FC<{ tracks: GalleryTrack[], onPlay: (id:string)=>
                          ) : (
                              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                          )}
-                         {playingId === heroTrack.id ? 'Now Playing' : 'Listen Now'}
+                         {playingId === heroTrack.id ? '正在播放' : '立即聆听'}
                     </button>
                 </div>
                 
@@ -62,7 +115,7 @@ export const MusicGrid: React.FC<{ tracks: GalleryTrack[], onPlay: (id:string)=>
                 {/* LEFT: TOP CHARTS */}
                 <div className="lg:col-span-1 space-y-6">
                     <h3 className="text-xl font-bold text-white flex items-center gap-2 border-b border-white/10 pb-4">
-                        <span className="text-acid">#</span> TOP CHARTS
+                        <span className="text-acid">#</span> 热歌榜 (TOP)
                     </h3>
                     <div className="flex flex-col gap-2">
                         {topCharts.map((t, idx) => (
@@ -89,7 +142,7 @@ export const MusicGrid: React.FC<{ tracks: GalleryTrack[], onPlay: (id:string)=>
                 {/* RIGHT: NEW ARRIVALS GRID */}
                 <div className="lg:col-span-3 space-y-6">
                     <h3 className="text-xl font-bold text-white flex items-center gap-2 border-b border-white/10 pb-4">
-                        <span className="text-acid">///</span> NEW ARRIVALS
+                        <span className="text-acid">///</span> 最新上架 (New Arrivals)
                     </h3>
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                         {newArrivals.map((t, idx) => {
@@ -102,8 +155,8 @@ export const MusicGrid: React.FC<{ tracks: GalleryTrack[], onPlay: (id:string)=>
                                         <img src={t.coverUrl} className={`w-full h-full object-cover transition-all duration-700 ${isPlaying ? 'scale-105 opacity-40' : 'grayscale-[0.5] group-hover:grayscale-0 group-hover:scale-105'}`} />
                                         
                                         {/* Tech Tag */}
-                                        <div className={`absolute top-2 right-2 px-1.5 py-0.5 text-[9px] font-bold font-mono uppercase tracking-wide rounded ${isPlaying ? 'bg-acid text-black' : 'bg-black/60 text-slate-300'}`}>
-                                            {tag}
+                                        <div className="absolute top-2 right-2">
+                                            <NeonChip text={tag} active={isPlaying} />
                                         </div>
 
                                         {/* Play Overlay */}
