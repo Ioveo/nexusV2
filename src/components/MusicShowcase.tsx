@@ -64,46 +64,136 @@ const BentoCard = ({ children, className = "", onClick }: { children?: React.Rea
         className={`bg-[#080808] border border-white/10 p-6 relative overflow-hidden group hover:border-acid/50 transition-all duration-300 ${className} ${onClick ? 'cursor-pointer' : ''}`}
     >
         {/* Decor */}
-        <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-white/30"></div>
-        <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-white/30"></div>
-        <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-white/30"></div>
-        <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-white/30"></div>
+        <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-white/30 group-hover:border-acid transition-colors"></div>
+        <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-white/30 group-hover:border-acid transition-colors"></div>
+        <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-white/30 group-hover:border-acid transition-colors"></div>
+        <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-white/30 group-hover:border-acid transition-colors"></div>
         {children}
     </div>
 );
 
+// --- ADMIN MODAL ---
+const AdminLoginModal = ({ isOpen, onClose, onLogin }: { isOpen: boolean, onClose: () => void, onLogin: (pwd: string) => Promise<boolean> }) => {
+    const [pwd, setPwd] = useState('');
+    const [error, setError] = useState(false);
+    
+    if (!isOpen) return null;
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const success = await onLogin(pwd);
+        if (success) {
+            onClose();
+            setPwd('');
+            setError(false);
+        } else {
+            setError(true);
+            setPwd('');
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-md animate-fade-in">
+             <div className="w-full max-w-sm bg-[#0a0a0a] border border-acid/30 p-8 relative shadow-[0_0_50px_rgba(204,255,0,0.1)]">
+                 <button onClick={onClose} className="absolute top-4 right-4 text-slate-500 hover:text-white">✕</button>
+                 <div className="text-center mb-8">
+                     <div className="w-16 h-16 bg-acid/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-acid/20">
+                        <svg className="w-8 h-8 text-acid" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                     </div>
+                     <h3 className="text-xl font-display font-bold text-white uppercase tracking-widest">System Access</h3>
+                     <p className="text-xs font-mono text-acid mt-2">身份验证 // AUTHENTICATION</p>
+                 </div>
+                 <form onSubmit={handleSubmit} className="space-y-4">
+                     <input 
+                        type="password" 
+                        value={pwd}
+                        onChange={e => setPwd(e.target.value)}
+                        placeholder="输入密钥..."
+                        className="w-full bg-black border border-white/20 p-3 text-center text-white font-mono tracking-[0.5em] focus:border-acid outline-none transition-colors"
+                        autoFocus
+                     />
+                     {error && <p className="text-center text-red-500 text-xs font-mono animate-pulse">ACCESS DENIED // 密码错误</p>}
+                     <button type="submit" className="w-full py-3 bg-acid text-black font-bold uppercase tracking-widest hover:bg-white transition-colors">
+                         UNLOCK
+                     </button>
+                 </form>
+             </div>
+        </div>
+    );
+};
+
+// --- ARRANGEMENT MASTER DROPDOWN ---
+const ArrangementMasterDropdown = ({ onNavigate }: { onNavigate: (v: string) => void }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+        <div className="relative group" onMouseEnter={() => setIsOpen(true)} onMouseLeave={() => setIsOpen(false)}>
+            <button className="flex items-center gap-1 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-acid px-4 py-2">
+                编曲大师 <svg className={`w-3 h-3 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+            </button>
+            <div className={`absolute top-full right-0 w-56 bg-[#0a0a0a] border border-white/10 shadow-xl transition-all duration-200 z-50 ${isOpen ? 'opacity-100 translate-y-0 visible' : 'opacity-0 translate-y-2 invisible'}`}>
+                <div className="p-1">
+                    <button onClick={() => onNavigate('dashboard')} className="flex items-center gap-3 w-full p-3 hover:bg-white/5 text-left group/item">
+                        <div className="w-8 h-8 rounded bg-acid/10 flex items-center justify-center text-acid group-hover/item:bg-acid group-hover/item:text-black transition-colors">
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+                        </div>
+                        <div>
+                            <div className="text-xs font-bold text-white uppercase">音乐工坊</div>
+                            <div className="text-[10px] text-slate-500">Audio Lab</div>
+                        </div>
+                    </button>
+                    <button onClick={() => onNavigate('custom')} className="flex items-center gap-3 w-full p-3 hover:bg-white/5 text-left group/item">
+                         <div className="w-8 h-8 rounded bg-neon/10 flex items-center justify-center text-neon group-hover/item:bg-neon group-hover/item:text-black transition-colors">
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                        </div>
+                        <div>
+                            <div className="text-xs font-bold text-white uppercase">创意实验室</div>
+                            <div className="text-[10px] text-slate-500">Creative V5</div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
 // --- NAVBAR ---
 const Navbar = ({ onNavigate, onAdmin, onSettings, currentView }: any) => (
     <nav className="fixed top-0 left-0 w-full z-[100] flex justify-between items-center px-4 md:px-8 py-4 bg-[#050505]/80 backdrop-blur-md border-b border-white/5">
-        <div onClick={() => onNavigate('home')} className="cursor-pointer group">
+        <div onClick={() => onNavigate('home')} className="cursor-pointer group flex items-center gap-2">
+             <div className="w-6 h-6 bg-acid rounded-sm"></div>
              <div className="font-display font-black text-2xl tracking-tighter text-white leading-none">NEXUS</div>
-             <div className="h-0.5 w-0 bg-acid group-hover:w-full transition-all duration-300"></div>
         </div>
         
         {/* Desktop Nav */}
         <div className="hidden lg:flex items-center gap-1">
-            {['home', 'music', 'video', 'article', 'gallery'].map(v => (
+            {[
+                {id: 'home', label: '主控台'},
+                {id: 'video', label: '影视中心'},
+                {id: 'music', label: '精选音乐'},
+                {id: 'article', label: '深度专栏'},
+                {id: 'gallery', label: '视觉画廊'}
+            ].map(v => (
                  <button 
-                    key={v}
-                    onClick={() => onNavigate(v)} 
-                    className={`px-6 py-2 text-xs font-bold uppercase tracking-widest transition-all clip-path-slant ${currentView === v ? 'bg-white text-black' : 'text-slate-400 hover:text-acid hover:bg-white/5'}`}
-                    style={{ clipPath: 'polygon(10% 0, 100% 0, 90% 100%, 0% 100%)' }}
+                    key={v.id}
+                    onClick={() => onNavigate(v.id)} 
+                    className={`px-6 py-2 text-xs font-bold uppercase tracking-widest transition-all clip-path-slant ${currentView === v.id ? 'bg-white text-black' : 'text-slate-400 hover:text-acid hover:bg-white/5'}`}
                  >
-                    {v}
+                    {v.label}
                  </button>
             ))}
         </div>
 
         {/* Tools */}
-        <div className="flex items-center gap-4">
-             <div className="hidden xl:flex gap-4 mr-4">
-                <button onClick={() => onNavigate('dashboard')} className="text-xs font-mono text-slate-400 hover:text-white">[ AUDIO_LAB ]</button>
-                <button onClick={() => onNavigate('custom')} className="text-xs font-mono text-slate-400 hover:text-neon">[ CREATIVE_V5 ]</button>
+        <div className="flex items-center gap-2">
+            <div className="hidden xl:block mr-2">
+                <ArrangementMasterDropdown onNavigate={onNavigate} />
             </div>
-            <button onClick={onAdmin} className="w-8 h-8 flex items-center justify-center border border-white/10 hover:border-acid/50 text-slate-400 hover:text-acid transition-colors">
+            
+            <button onClick={onAdmin} className="w-8 h-8 flex items-center justify-center border border-white/10 hover:border-acid/50 text-slate-400 hover:text-acid transition-colors bg-black">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
             </button>
-            <button onClick={onSettings} className="w-8 h-8 flex items-center justify-center border border-white/10 hover:border-acid/50 text-slate-400 hover:text-acid transition-colors">
+            <button onClick={onSettings} className="w-8 h-8 flex items-center justify-center border border-white/10 hover:border-acid/50 text-slate-400 hover:text-acid transition-colors bg-black">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
             </button>
         </div>
@@ -116,19 +206,22 @@ const SectionHeader = ({ title, sub, onMore, color="acid" }: { title: string, su
 
     return (
         <div className="flex items-end justify-between mb-8 pb-2 border-b border-white/10 relative group">
-            <div className={`absolute bottom-[-1px] left-0 w-8 h-[2px] ${bgClass} group-hover:w-full transition-all duration-700 ease-out`}></div>
-            <div>
-                <div className={`text-[10px] font-mono font-bold tracking-[0.3em] uppercase mb-1 flex items-center gap-2 ${colorClass}`}>
-                    <span className={`w-1 h-1 rounded-full ${bgClass} animate-pulse-fast`}></span>
-                    {sub}
-                </div>
-                <h2 className="text-4xl md:text-6xl font-display font-bold text-white tracking-tighter uppercase leading-[0.85]">
+            {/* Animated Underline */}
+            <div className={`absolute bottom-[-1px] left-0 w-12 h-[3px] ${bgClass} group-hover:w-full transition-all duration-700 ease-out`}></div>
+            
+            <div className="flex flex-col">
+                <h2 className="text-4xl md:text-6xl font-display font-black text-white tracking-tighter uppercase leading-[0.85]">
                     {title}
                 </h2>
+                <div className={`text-[10px] font-mono font-bold tracking-[0.3em] uppercase mt-2 flex items-center gap-2 ${colorClass}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${bgClass} animate-pulse-fast`}></span>
+                    {sub}
+                </div>
             </div>
+            
             {onMore && (
-                <button onClick={onMore} className="hidden md:flex items-center gap-2 px-4 py-2 border border-white/10 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-black hover:bg-white transition-all">
-                    View_All
+                <button onClick={onMore} className="hidden md:flex items-center gap-2 px-6 py-2 border border-white/10 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-black hover:bg-white transition-all rounded-full hover:px-8">
+                    查看全部 <span className="text-xs">→</span>
                 </button>
             )}
         </div>
@@ -137,6 +230,7 @@ const SectionHeader = ({ title, sub, onMore, color="acid" }: { title: string, su
 
 export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
     const [adminMode, setAdminMode] = useState(false);
+    const [showLoginModal, setShowLoginModal] = useState(false);
     const [activeTab, setActiveTab] = useState('music');
     const [playingId, setPlayingId] = useState<string|null>(null);
     const [readingArticle, setReadingArticle] = useState<Article | null>(null);
@@ -148,16 +242,27 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
 
-    const handleAdmin = async () => {
-        const pwd = prompt("AUTH_REQUIRED // ENTER PASSWORD:");
-        if (!pwd) return;
+    const handleAdminClick = () => {
+        const storedPwd = localStorage.getItem('admin_password');
+        if (storedPwd) {
+            // Auto login check (optional, but good for UX)
+            storageService.verifyAuth(storedPwd).then(valid => {
+                if (valid) setAdminMode(true);
+                else setShowLoginModal(true);
+            });
+        } else {
+            setShowLoginModal(true);
+        }
+    };
+
+    const handleLoginSubmit = async (pwd: string) => {
         const valid = await storageService.verifyAuth(pwd);
         if (valid) {
             localStorage.setItem('admin_password', pwd);
             setAdminMode(true);
-        } else {
-            alert("ACCESS DENIED");
+            return true;
         }
+        return false;
     };
     
     // --- Audio Logic ---
@@ -207,20 +312,20 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
                     <div className="flex flex-col md:flex-row justify-between items-center mb-8 border-b border-white/10 pb-6 gap-4">
                         <div>
                             <h1 className="text-3xl font-display font-bold text-white">SYSTEM <span className="text-acid">CORE</span></h1>
-                            <p className="text-slate-400 text-xs font-mono mt-1">CONTENT MANAGEMENT SYSTEM</p>
+                            <p className="text-slate-400 text-xs font-mono mt-1">CONTENT MANAGEMENT SYSTEM // 后台管理系统</p>
                         </div>
                         <button onClick={() => setAdminMode(false)} className="px-6 py-2 border border-white/10 text-xs font-bold uppercase tracking-wider hover:bg-white hover:text-black transition-colors">
-                            LOGOUT
+                            退出登入
                         </button>
                     </div>
 
                     <div className="flex gap-2 mb-8 overflow-x-auto pb-2 no-scrollbar">
                         {[
-                            {id:'music', label:'Music_DB'},
-                            {id:'video', label:'Video_DB'},
-                            {id:'article', label:'Editorial_DB'},
-                            {id:'gallery', label:'Visual_DB'},
-                            {id:'category', label:'Taxonomy'}
+                            {id:'music', label:'音乐库 (Music)'},
+                            {id:'video', label:'影视库 (Video)'},
+                            {id:'article', label:'专栏库 (Editorial)'},
+                            {id:'gallery', label:'画廊 (Gallery)'},
+                            {id:'category', label:'分类管理 (Tags)'}
                         ].map(tab => (
                             <button 
                                 key={tab.id} 
@@ -248,7 +353,8 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
     if (props.currentView === 'home') {
         return (
             <div className="relative w-full min-h-screen bg-[#050505] text-white pb-40 overflow-hidden">
-                <Navbar onNavigate={props.onNavigate} onAdmin={handleAdmin} onSettings={props.onOpenSettings} currentView={props.currentView} />
+                <Navbar onNavigate={props.onNavigate} onAdmin={handleAdminClick} onSettings={props.onOpenSettings} currentView={props.currentView} />
+                <AdminLoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} onLogin={handleLoginSubmit} />
 
                 {/* BACKGROUND DECOR */}
                 <div className="fixed top-0 left-0 w-full h-full pointer-events-none z-0">
@@ -266,7 +372,7 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
                             <div className="relative z-10">
                                 <div className="flex items-center gap-2 mb-4">
                                     <div className="w-2 h-2 bg-acid animate-pulse"></div>
-                                    <span className="text-xs font-mono text-acid uppercase tracking-widest">System Online</span>
+                                    <span className="text-xs font-mono text-acid uppercase tracking-widest">System Online // 系统在线</span>
                                 </div>
                                 <h1 className="text-[15vw] md:text-[9rem] lg:text-[11rem] font-display font-black leading-[0.8] tracking-tighter text-white mix-blend-difference select-none">
                                     NEXUS
@@ -274,10 +380,10 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
                             </div>
                             <div className="relative z-10 flex flex-col md:flex-row justify-between items-end gap-6">
                                 <p className="text-xl md:text-2xl text-slate-300 font-light max-w-lg leading-relaxed">
-                                    Connecting <span className="text-acid font-bold">Auditory</span> & <span className="text-neon font-bold">Visual</span> Intelligence.
+                                    连接 <span className="text-acid font-bold">听觉</span> 与 <span className="text-neon font-bold">视觉</span> 的下一代智能终端。
                                 </p>
-                                <button onClick={() => props.onNavigate('music')} className="px-8 py-4 bg-white text-black font-bold uppercase tracking-widest hover:bg-acid hover:scale-105 transition-all w-full md:w-auto">
-                                    Explore Library
+                                <button onClick={() => props.onNavigate('music')} className="px-8 py-4 bg-white text-black font-bold uppercase tracking-widest hover:bg-acid hover:scale-105 transition-all w-full md:w-auto shadow-[0_0_20px_rgba(255,255,255,0.3)]">
+                                    探索媒体库 ->
                                 </button>
                             </div>
                         </BentoCard>
@@ -305,7 +411,7 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
                              <div className="w-16 h-16 rounded-full border border-white/20 flex items-center justify-center group-hover:border-acid group-hover:scale-110 transition-all">
                                  <svg className="w-8 h-8 text-white group-hover:text-acid" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
                              </div>
-                             <span className="text-xs font-bold uppercase tracking-widest text-slate-300 group-hover:text-white">Analyze Audio</span>
+                             <span className="text-xs font-bold uppercase tracking-widest text-slate-300 group-hover:text-white">音频分析</span>
                              <input type="file" ref={fileInputRef} onChange={(e) => e.target.files && props.onAnalyze(e.target.files[0])} className="hidden" accept="audio/*" />
                         </BentoCard>
 
@@ -328,7 +434,7 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
                         <section className="relative">
                             <Marquee text="CINEMA EXPERIENCE" opacity={0.05} />
                             <div className="relative z-10 -mt-20">
-                                <SectionHeader title="Cinema" sub="Featured_Video" color="orange" onMore={() => props.onNavigate('video')} />
+                                <SectionHeader title="影视中心" sub="Cinema_Database" color="orange" onMore={() => props.onNavigate('video')} />
                                 <VideoGrid videos={props.videos.slice(0, 10)} onPauseMusic={handlePauseMusic} />
                             </div>
                         </section>
@@ -336,18 +442,18 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
                         <section className="relative">
                             <Marquee text="SONIC ARCHITECTURE" reverse opacity={0.05} />
                             <div className="relative z-10 -mt-20">
-                                <SectionHeader title="Music" sub="Trending_Tracks" color="acid" onMore={() => props.onNavigate('music')} />
+                                <SectionHeader title="精选音乐" sub="Featured_Tracks" color="acid" onMore={() => props.onNavigate('music')} />
                                 <MusicGrid tracks={props.tracks.slice(0, 8)} onPlay={handlePlay} playingId={playingId} />
                             </div>
                         </section>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
                             <section>
-                                <SectionHeader title="Editorial" sub="Deep_Dive" color="cyber" onMore={() => props.onNavigate('article')} />
+                                <SectionHeader title="深度专栏" sub="Editorial_Hub" color="cyber" onMore={() => props.onNavigate('article')} />
                                 <ArticleGrid articles={props.articles.slice(0, 2)} onRead={setReadingArticle} />
                             </section>
                             <section>
-                                <SectionHeader title="Gallery" sub="Visual_Arts" color="neon" onMore={() => props.onNavigate('gallery')} />
+                                <SectionHeader title="视觉画廊" sub="Gallery_Arts" color="neon" onMore={() => props.onNavigate('gallery')} />
                                 <GalleryGrid images={props.gallery.slice(0, 6)} />
                             </section>
                         </div>
@@ -363,9 +469,9 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
                             <p className="text-xs text-slate-500 font-mono">© 2024 SYSTEM CORE. ALL RIGHTS RESERVED.</p>
                         </div>
                         <div className="flex gap-8 text-xs font-bold uppercase tracking-widest text-slate-500">
-                             <button onClick={() => props.onNavigate('home')} className="hover:text-white">Home</button>
-                             <button onClick={() => props.onNavigate('music')} className="hover:text-white">Library</button>
-                             <button onClick={handleAdmin} className="hover:text-acid">Admin</button>
+                             <button onClick={() => props.onNavigate('home')} className="hover:text-white">首页</button>
+                             <button onClick={() => props.onNavigate('music')} className="hover:text-white">曲库</button>
+                             <button onClick={handleAdminClick} className="hover:text-acid">管理入口</button>
                         </div>
                     </div>
                 </footer>
@@ -429,7 +535,8 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
     // --- OTHER VIEWS (Simple wrappers) ---
     const SimpleLayout = ({ children, title, subtitle, color="acid" }: any) => (
         <div className="min-h-screen bg-[#050505] text-white pb-32 pt-24 px-4 md:px-8">
-            <Navbar onNavigate={props.onNavigate} onAdmin={handleAdmin} onSettings={props.onOpenSettings} currentView={props.currentView} />
+            <Navbar onNavigate={props.onNavigate} onAdmin={handleAdminClick} onSettings={props.onOpenSettings} currentView={props.currentView} />
+            <AdminLoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} onLogin={handleLoginSubmit} />
             <div className="max-w-[1600px] mx-auto">
                 <div className="mb-12 border-b border-white/10 pb-6">
                     <h1 className="text-6xl md:text-8xl font-display font-black text-white uppercase tracking-tighter mb-2">{title}</h1>
@@ -477,10 +584,10 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
         </div>
     );
 
-    if (props.currentView === 'video') return <SimpleLayout title="Cinema" subtitle="Visual_Database" color="orange"><VideoGrid videos={props.videos} onPauseMusic={handlePauseMusic} /></SimpleLayout>;
-    if (props.currentView === 'music') return <SimpleLayout title="Library" subtitle="Sonic_Archive" color="acid"><MusicGrid tracks={props.tracks} onPlay={handlePlay} playingId={playingId} /></SimpleLayout>;
-    if (props.currentView === 'article') return <SimpleLayout title="Editorial" subtitle="Deep_Research" color="cyber"><ArticleGrid articles={props.articles} onRead={setReadingArticle} /></SimpleLayout>;
-    if (props.currentView === 'gallery') return <SimpleLayout title="Gallery" subtitle="Visual_Arts" color="neon"><GalleryGrid images={props.gallery} /></SimpleLayout>;
+    if (props.currentView === 'video') return <SimpleLayout title="影视中心" subtitle="Cinema_Database" color="orange"><VideoGrid videos={props.videos} onPauseMusic={handlePauseMusic} /></SimpleLayout>;
+    if (props.currentView === 'music') return <SimpleLayout title="精选音乐" subtitle="Sonic_Archive" color="acid"><MusicGrid tracks={props.tracks} onPlay={handlePlay} playingId={playingId} /></SimpleLayout>;
+    if (props.currentView === 'article') return <SimpleLayout title="深度专栏" subtitle="Editorial_Hub" color="cyber"><ArticleGrid articles={props.articles} onRead={setReadingArticle} /></SimpleLayout>;
+    if (props.currentView === 'gallery') return <SimpleLayout title="视觉画廊" subtitle="Visual_Arts" color="neon"><GalleryGrid images={props.gallery} /></SimpleLayout>;
 
     return null; // Should not reach here
 }
