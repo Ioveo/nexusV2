@@ -84,18 +84,18 @@ export const VideoManager: React.FC<VideoManagerProps> = ({ videos, categories, 
           let updatedVideos: Video[] = [];
 
           // Critical: Handle Hero Exclusivity
-          // If this video is set to Hero, set all others to false.
+          // If this video is set to Hero, ensure ALL others are set to false.
           if (videoData.isHero) {
               if (mode === 'edit') {
                   updatedVideos = videos.map(v => {
-                      if (v.id === editingId) return videoData;
-                      return { ...v, isHero: false };
+                      if (v.id === editingId) return videoData; // This one is true
+                      return { ...v, isHero: false }; // Others false
                   });
               } else {
                   updatedVideos = [videoData, ...videos.map(v => ({ ...v, isHero: false }))];
               }
           } else {
-              // Standard update
+              // Just normal update
               if (mode === 'edit') {
                   updatedVideos = videos.map(v => v.id === editingId ? videoData : v);
               } else {
