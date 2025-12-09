@@ -1,4 +1,3 @@
-
 // src/components/MusicShowcase.tsx
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -9,11 +8,11 @@ import { ArticleView } from './ArticleView';
 import { storageService } from '../services/storageService';
 
 // Module Imports
-import { MusicGrid } from './MusicGrid';
+import { MusicGrid, HomeMusicWidget } from './MusicGrid';
 import { MusicManager } from './MusicManager';
-import { VideoGrid } from './VideoGrid';
+import { VideoGrid, HomeVideoWidget } from './VideoGrid';
 import { VideoManager } from './VideoManager';
-import { ArticleGrid } from './ArticleGrid';
+import { ArticleGrid, HomeArticleWidget } from './ArticleGrid';
 import { ArticleManager } from './ArticleManager';
 import { GalleryGrid } from './GalleryGrid';
 import { GalleryManager } from './GalleryManager';
@@ -443,26 +442,29 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
                     {/* SECTIONS */}
                     <div className="space-y-32">
                         
+                        {/* 1. CINEMA WIDGET */}
                         <section className="relative">
                             <Marquee text="CINEMA EXPERIENCE" opacity={0.05} />
                             <div className="relative z-10 -mt-20">
                                 <SectionHeader title="影视中心" sub="Cinema_Database" color="orange" onMore={() => props.onNavigate('video')} />
-                                <VideoGrid videos={props.videos} onPauseMusic={handlePauseMusic} />
+                                <HomeVideoWidget videos={props.videos} onWatch={(v) => { props.onNavigate('video'); }} />
                             </div>
                         </section>
 
+                        {/* 2. MUSIC WIDGET */}
                         <section className="relative">
                             <Marquee text="SONIC ARCHITECTURE" reverse opacity={0.05} />
                             <div className="relative z-10 -mt-20">
                                 <SectionHeader title="精选音乐" sub="Featured_Tracks" color="acid" onMore={() => props.onNavigate('music')} />
-                                <MusicGrid tracks={props.tracks} onPlay={handlePlay} playingId={playingId} />
+                                <HomeMusicWidget tracks={props.tracks} onPlay={handlePlay} playingId={playingId} />
                             </div>
                         </section>
 
+                        {/* 3. MIXED WIDGETS */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
                             <section>
                                 <SectionHeader title="深度专栏" sub="Editorial_Hub" color="cyber" onMore={() => props.onNavigate('article')} />
-                                <ArticleGrid articles={props.articles.slice(0, 2)} onRead={setReadingArticle} />
+                                <HomeArticleWidget articles={props.articles.slice(0, 4)} onRead={setReadingArticle} />
                             </section>
                             <section>
                                 <SectionHeader title="视觉画廊" sub="Gallery_Arts" color="neon" onMore={() => props.onNavigate('gallery')} />
