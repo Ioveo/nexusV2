@@ -1,3 +1,4 @@
+
 // src/components/VideoGrid.tsx
 
 import React, { useState } from 'react';
@@ -21,7 +22,22 @@ export const HomeVideoWidget = ({ videos, onWatch }: { videos: Video[], onWatch:
                 onClick={() => onWatch(hero)}
                 className="lg:col-span-8 relative rounded-2xl overflow-hidden group cursor-pointer border border-white/10 hover:border-orange-500/50 transition-all"
             >
-                <img src={hero.coverUrl} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-700" />
+                {/* Background Video (Muted for Autoplay) or Image */}
+                <div className="absolute inset-0">
+                    {hero.videoUrl ? (
+                        <video 
+                            src={hero.videoUrl} 
+                            className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-700" 
+                            autoPlay 
+                            muted 
+                            loop 
+                            playsInline 
+                        />
+                    ) : (
+                        <img src={hero.coverUrl} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-700" />
+                    )}
+                </div>
+                
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent"></div>
                 
                 <div className="absolute top-4 left-4 flex gap-2">
@@ -30,7 +46,12 @@ export const HomeVideoWidget = ({ videos, onWatch }: { videos: Video[], onWatch:
                 </div>
 
                 <div className="absolute bottom-0 left-0 p-8 w-full">
-                    <h3 className="text-4xl md:text-5xl font-display font-black text-white mb-2 leading-none uppercase">{hero.title}</h3>
+                    {hero.adSlogan && (
+                         <div className="inline-block px-3 py-1 bg-orange-500/20 border border-orange-500/50 backdrop-blur rounded text-orange-400 text-xs font-bold uppercase tracking-widest mb-3">
+                             {hero.adSlogan}
+                         </div>
+                    )}
+                    <h3 className="text-4xl md:text-5xl font-display font-black text-white mb-2 leading-none uppercase text-shadow-lg">{hero.title}</h3>
                     <p className="text-slate-300 text-sm line-clamp-2 max-w-xl mb-6">{hero.description || "A cinematic masterpiece. Experience visual storytelling at its finest."}</p>
                     <button className="px-6 py-3 bg-white text-black font-bold uppercase tracking-widest rounded flex items-center gap-2 hover:bg-orange-500 transition-colors">
                         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
@@ -135,8 +156,21 @@ export const VideoGrid: React.FC<VideoGridProps> = ({ videos, onPauseMusic }) =>
       
       {/* --- BILLBOARD HERO --- */}
       <div className="relative w-full h-[65vh] md:h-[85vh] mb-8 group overflow-hidden">
-          <div className="absolute inset-0">
-              <img src={heroVideo.coverUrl} className="w-full h-full object-cover transform transition-transform duration-[20s] group-hover:scale-105" />
+          <div className="absolute inset-0 pointer-events-none">
+               {/* 
+                  Use Video for background if available. 
+                  MUST be Muted/Autoplay/Loop/PlaysInline to autoplay on most browsers.
+               */}
+              {heroVideo.videoUrl ? (
+                  <video 
+                    src={heroVideo.videoUrl} 
+                    className="w-full h-full object-cover transform transition-transform duration-[20s] group-hover:scale-105"
+                    autoPlay muted loop playsInline
+                  />
+              ) : (
+                  <img src={heroVideo.coverUrl} className="w-full h-full object-cover transform transition-transform duration-[20s] group-hover:scale-105" />
+              )}
+              
               <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/20 to-transparent"></div>
               <div className="absolute inset-0 bg-gradient-to-r from-[#050505] via-[#050505]/40 to-transparent"></div>
           </div>
@@ -146,6 +180,15 @@ export const VideoGrid: React.FC<VideoGridProps> = ({ videos, onPauseMusic }) =>
                   <span className="bg-[#e50914] text-white text-[10px] font-black uppercase px-2 py-0.5 rounded shadow-lg shadow-red-500/20">NEXUS 原创</span>
                   <span className="bg-white/10 backdrop-blur text-white text-[10px] font-bold uppercase px-2 py-0.5 rounded border border-white/10">4K HDR</span>
               </div>
+              
+              {/* --- AD SLOGAN --- */}
+              {heroVideo.adSlogan && (
+                  <div className="opacity-0 translate-y-4 animate-slide-up mb-4" style={{ animationDelay: '0.3s' }}>
+                      <span className="text-2xl md:text-3xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-500 uppercase tracking-wide drop-shadow-lg">
+                          {heroVideo.adSlogan}
+                      </span>
+                  </div>
+              )}
               
               <h1 className="text-5xl md:text-7xl lg:text-9xl font-display font-black text-white leading-[0.85] mb-6 max-w-5xl opacity-0 translate-y-4 animate-slide-up drop-shadow-2xl" style={{ animationDelay: '0.4s' }}>
                   {heroVideo.title}
@@ -201,30 +244,40 @@ export const VideoGrid: React.FC<VideoGridProps> = ({ videos, onPauseMusic }) =>
 
       {/* --- IMMERSIVE MODAL --- */}
       {playingVideo && (
-          <div className="fixed inset-0 z-[200] bg-black animate-fade-in flex items-center justify-center">
-              <button 
-                  onClick={() => setPlayingVideo(null)}
-                  className="absolute top-8 right-8 z-50 text-white/50 hover:text-white p-2 bg-black/50 rounded-full backdrop-blur"
-              >
-                  <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
+          <div className="fixed inset-0 z-[200] bg-black animate-fade-in flex flex-col items-center justify-center">
+              {/* Top Bar (Close) */}
+              <div className="absolute top-0 left-0 w-full p-4 flex justify-end z-[220] pointer-events-none">
+                  <button 
+                      onClick={() => setPlayingVideo(null)}
+                      className="pointer-events-auto text-white/70 hover:text-white p-2 bg-black/50 rounded-full backdrop-blur transition-all"
+                  >
+                      <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+              </div>
               
-              <div className="w-full h-full max-w-[1920px] mx-auto flex flex-col">
-                  <div className="flex-1 bg-black relative flex items-center justify-center">
+              {/* Video Container - Constrained to Viewport to ensure controls are visible */}
+              <div className="w-full h-full flex flex-col">
+                  <div className="flex-1 bg-black relative flex items-center justify-center overflow-hidden">
+                      {/* 
+                        Use object-contain and max-h-screen to ensure the whole video, including controls, 
+                        is visible within the viewport.
+                      */}
                       <video 
                         src={playingVideo.videoUrl} 
                         controls 
                         autoPlay 
-                        className="max-w-full max-h-full w-full h-full shadow-[0_0_100px_rgba(255,255,255,0.1)]"
+                        className="w-full h-full object-contain max-h-[85vh] shadow-2xl"
                       />
                   </div>
-                  <div className="h-32 bg-[#0a0a0a] border-t border-white/10 px-8 md:px-16 flex items-center justify-between shrink-0">
+                  
+                  {/* Footer Info */}
+                  <div className="h-[15vh] bg-[#0a0a0a] border-t border-white/10 px-8 md:px-16 flex items-center justify-between shrink-0 z-[210]">
                       <div>
                           <div className="flex items-center gap-3 mb-1">
                               <span className="text-[10px] font-bold bg-white/10 text-white px-2 py-0.5 rounded">{playingVideo.category}</span>
                               <span className="text-[10px] font-bold bg-acid/10 text-acid px-2 py-0.5 rounded">HD</span>
                           </div>
-                          <h2 className="text-3xl font-display font-bold text-white">{playingVideo.title}</h2>
+                          <h2 className="text-2xl md:text-3xl font-display font-bold text-white">{playingVideo.title}</h2>
                           <p className="text-slate-500 text-sm font-mono mt-1">Directed by {playingVideo.author} // NEXUS STUDIOS</p>
                       </div>
                       <div className="text-right hidden md:block">
