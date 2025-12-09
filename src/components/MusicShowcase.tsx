@@ -171,9 +171,9 @@ const ArrangementMasterDropdown = ({ onNavigate }: { onNavigate: (v: string) => 
 
 // --- NAVBAR ---
 const Navbar = ({ onNavigate, onAdmin, onSettings, currentView }: any) => (
-    <nav className="fixed top-0 left-0 w-full z-[100] flex justify-between items-center px-4 md:px-8 py-4 bg-[#050505]/80 backdrop-blur-md border-b border-white/5">
+    <nav className="fixed top-0 left-0 w-full z-[100] flex justify-between items-center px-4 md:px-8 py-4 bg-[#050505]/80 backdrop-blur-md border-b border-white/5 transition-all duration-300">
         <div onClick={() => onNavigate('home')} className="cursor-pointer group flex items-center gap-2">
-             <div className="w-6 h-6 bg-acid rounded-sm"></div>
+             <div className="w-6 h-6 bg-acid rounded-sm shadow-[0_0_10px_#ccff00]"></div>
              <div className="font-display font-black text-2xl tracking-tighter text-white leading-none">NEXUS</div>
         </div>
         
@@ -202,10 +202,10 @@ const Navbar = ({ onNavigate, onAdmin, onSettings, currentView }: any) => (
                 <ArrangementMasterDropdown onNavigate={onNavigate} />
             </div>
             
-            <button onClick={onAdmin} className="w-8 h-8 flex items-center justify-center border border-white/10 hover:border-acid/50 text-slate-400 hover:text-acid transition-colors bg-black">
+            <button onClick={onAdmin} className="w-8 h-8 flex items-center justify-center border border-white/10 hover:border-acid/50 text-slate-400 hover:text-acid transition-colors bg-black rounded">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
             </button>
-            <button onClick={onSettings} className="w-8 h-8 flex items-center justify-center border border-white/10 hover:border-acid/50 text-slate-400 hover:text-acid transition-colors bg-black">
+            <button onClick={onSettings} className="w-8 h-8 flex items-center justify-center border border-white/10 hover:border-acid/50 text-slate-400 hover:text-acid transition-colors bg-black rounded">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
             </button>
         </div>
@@ -488,42 +488,69 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
                     </div>
                 </footer>
                 
-                {/* GLOBAL PLAYER */}
-                <div className={`fixed bottom-0 left-0 w-full z-[110] transition-transform duration-500 ease-out ${playingId ? 'translate-y-0' : 'translate-y-full'}`}>
-                    <div className="h-24 bg-[#0a0a0a]/90 backdrop-blur-2xl border-t border-white/10 px-4 md:px-8 flex items-center justify-between shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
-                         <div className="flex items-center gap-4 w-1/3">
-                            {currentTrack && <img src={currentTrack.coverUrl} className="w-14 h-14 object-cover border border-white/10" />}
-                            <div className="hidden md:block">
-                                 <h4 className="text-white font-bold text-sm uppercase tracking-wide">{currentTrack?.title}</h4>
-                                 <p className="text-xs text-acid font-mono">{currentTrack?.artist}</p>
-                            </div>
+                {/* --- GLOBAL FLOATING CAPSULE PLAYER --- */}
+                <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 w-[95%] max-w-3xl z-[150] transition-all duration-700 cubic-bezier(0.34, 1.56, 0.64, 1) ${playingId ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-32 opacity-0 scale-90 pointer-events-none'}`}>
+                    <div className="bg-[#111]/90 backdrop-blur-3xl border border-white/10 rounded-full p-2 pr-6 shadow-[0_20px_50px_rgba(0,0,0,0.6)] flex items-center gap-4 overflow-hidden relative group">
+                         
+                         {/* ProgressBar (Background) */}
+                         <div className="absolute bottom-0 left-0 h-[2px] bg-white/20 w-full z-0 cursor-pointer" onClick={(e) => {
+                             const rect = e.currentTarget.getBoundingClientRect();
+                             const x = e.clientX - rect.left;
+                             const percent = x / rect.width;
+                             if(audioRef.current && duration) audioRef.current.currentTime = percent * duration;
+                         }}>
+                             <div className="absolute top-0 left-0 h-full bg-acid transition-all duration-300" style={{ width: `${(currentTime/duration)*100}%` }}></div>
+                         </div>
+
+                         {/* Spinning Vinyl Cover */}
+                         <div className="relative shrink-0 w-14 h-14 rounded-full overflow-hidden border border-white/10 bg-black z-10">
+                             <img 
+                                src={currentTrack?.coverUrl} 
+                                className={`w-full h-full object-cover opacity-80 ${playingId ? 'animate-[spin_8s_linear_infinite]' : ''}`} 
+                             />
+                             {/* Vinyl Glint */}
+                             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent rounded-full pointer-events-none"></div>
+                             {/* Center Hole */}
+                             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-[#111] rounded-full border border-white/20"></div>
                          </div>
                          
-                         <div className="flex-1 max-w-xl flex flex-col justify-center items-center">
-                              <div className="flex items-center gap-6 mb-3">
-                                <button className="text-slate-500 hover:text-white"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg></button>
-                                <button onClick={() => setPlayingId(null)} className="w-10 h-10 flex items-center justify-center bg-acid text-black hover:scale-105 transition-transform"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg></button>
-                                <button className="text-slate-500 hover:text-white"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg></button>
-                              </div>
-                              <div className="w-full h-0.5 bg-white/10 relative group cursor-pointer">
-                                 <div className="absolute top-0 left-0 h-full bg-acid group-hover:bg-white transition-colors" style={{ width: `${(currentTime/duration)*100}%` }}></div>
+                         {/* Track Info */}
+                         <div className="flex-1 min-w-0 z-10 flex flex-col justify-center">
+                              <h4 className="text-white font-bold text-sm truncate pr-4">{currentTrack?.title}</h4>
+                              <div className="flex items-center gap-2">
+                                  <span className="text-[10px] text-acid font-mono uppercase truncate">{currentTrack?.artist}</span>
+                                  <span className="text-[9px] text-slate-500 font-mono hidden md:inline-block">
+                                      {Math.floor(currentTime/60)}:{Math.floor(currentTime%60).toString().padStart(2,'0')} / {Math.floor(duration/60)}:{Math.floor(duration%60).toString().padStart(2,'0')}
+                                  </span>
                               </div>
                          </div>
 
-                         <div className="w-1/3 flex justify-end gap-4">
-                             <button onClick={() => setShowLyrics(!showLyrics)} className="text-[10px] font-bold uppercase border border-white/20 px-3 py-1 text-slate-400 hover:text-white hover:border-white transition-all">Lyrics</button>
+                         {/* Controls */}
+                         <div className="flex items-center gap-3 z-10">
+                              <button className="text-slate-500 hover:text-white transition-colors p-2"><svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg></button>
+                              
+                              <button onClick={() => { if(audioRef.current?.paused) audioRef.current.play(); else audioRef.current?.pause(); setPlayingId(null); }} className="w-10 h-10 rounded-full bg-white text-black hover:bg-acid hover:scale-110 transition-all flex items-center justify-center shadow-lg">
+                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                              </button>
+
+                              <button className="text-slate-500 hover:text-white transition-colors p-2"><svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg></button>
+                              
+                              <div className="w-px h-6 bg-white/10 mx-1"></div>
+
+                              <button onClick={() => setShowLyrics(!showLyrics)} className={`text-[10px] font-bold uppercase px-2 py-1 rounded border transition-all ${showLyrics ? 'bg-acid text-black border-acid' : 'text-slate-400 border-white/20 hover:text-white'}`}>
+                                  LRC
+                              </button>
+
+                              {/* CLOSE BUTTON (Explicit) */}
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); setPlayingId(null); }} 
+                                className="w-8 h-8 rounded-full bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white flex items-center justify-center transition-all ml-1"
+                                title="Close Player"
+                              >
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                              </button>
                          </div>
                     </div>
-                    {currentTrack && (
-                        <audio 
-                            ref={audioRef} 
-                            src={getAudioSrc(currentTrack)} 
-                            autoPlay 
-                            onTimeUpdate={handleTimeUpdate}
-                            onEnded={() => setPlayingId(null)} 
-                            {...{ referrerPolicy: "no-referrer" } as any} 
-                        />
-                    )}
                 </div>
 
                 {/* VISUALIZER MASCOT */}
@@ -538,6 +565,19 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
                         currentTime={currentTime}
                         onSeek={(t) => { if (audioRef.current) audioRef.current.currentTime = t; }}
                         onClose={() => setShowLyrics(false)}
+                    />
+                )}
+
+                {/* HIDDEN AUDIO ELEMENT */}
+                {currentTrack && (
+                    <audio 
+                        ref={audioRef} 
+                        src={getAudioSrc(currentTrack)} 
+                        autoPlay 
+                        onTimeUpdate={handleTimeUpdate}
+                        onEnded={() => setPlayingId(null)} 
+                        {...{ referrerPolicy: "no-referrer" } as any} 
+                        className="hidden"
                     />
                 )}
             </div>
@@ -557,42 +597,79 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
                 {children}
             </div>
              {/* Global Player (Persistent) */}
-             <div className={`fixed bottom-0 left-0 w-full z-[110] transition-transform duration-500 ease-out ${playingId ? 'translate-y-0' : 'translate-y-full'}`}>
-                    <div className="h-24 bg-[#0a0a0a]/90 backdrop-blur-2xl border-t border-white/10 px-4 md:px-8 flex items-center justify-between shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
-                         <div className="flex items-center gap-4 w-1/3">
-                            {currentTrack && <img src={currentTrack.coverUrl} className="w-14 h-14 object-cover border border-white/10" />}
-                            <div className="hidden md:block">
-                                 <h4 className="text-white font-bold text-sm uppercase tracking-wide">{currentTrack?.title}</h4>
-                                 <p className="text-xs text-acid font-mono">{currentTrack?.artist}</p>
-                            </div>
+             <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 w-[95%] max-w-3xl z-[150] transition-all duration-700 cubic-bezier(0.34, 1.56, 0.64, 1) ${playingId ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-32 opacity-0 scale-90 pointer-events-none'}`}>
+                    <div className="bg-[#111]/90 backdrop-blur-3xl border border-white/10 rounded-full p-2 pr-6 shadow-[0_20px_50px_rgba(0,0,0,0.6)] flex items-center gap-4 overflow-hidden relative group">
+                         
+                         {/* ProgressBar (Background) */}
+                         <div className="absolute bottom-0 left-0 h-[2px] bg-white/20 w-full z-0 cursor-pointer" onClick={(e) => {
+                             const rect = e.currentTarget.getBoundingClientRect();
+                             const x = e.clientX - rect.left;
+                             const percent = x / rect.width;
+                             if(audioRef.current && duration) audioRef.current.currentTime = percent * duration;
+                         }}>
+                             <div className="absolute top-0 left-0 h-full bg-acid transition-all duration-300" style={{ width: `${(currentTime/duration)*100}%` }}></div>
+                         </div>
+
+                         {/* Spinning Vinyl Cover */}
+                         <div className="relative shrink-0 w-14 h-14 rounded-full overflow-hidden border border-white/10 bg-black z-10">
+                             <img 
+                                src={currentTrack?.coverUrl} 
+                                className={`w-full h-full object-cover opacity-80 ${playingId ? 'animate-[spin_8s_linear_infinite]' : ''}`} 
+                             />
+                             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent rounded-full pointer-events-none"></div>
+                             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-[#111] rounded-full border border-white/20"></div>
                          </div>
                          
-                         <div className="flex-1 max-w-xl flex flex-col justify-center items-center">
-                              <div className="flex items-center gap-6 mb-3">
-                                <button className="text-slate-500 hover:text-white"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg></button>
-                                <button onClick={() => setPlayingId(null)} className="w-10 h-10 flex items-center justify-center bg-acid text-black hover:scale-105 transition-transform"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg></button>
-                                <button className="text-slate-500 hover:text-white"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg></button>
-                              </div>
-                              <div className="w-full h-0.5 bg-white/10 relative group cursor-pointer">
-                                 <div className="absolute top-0 left-0 h-full bg-acid group-hover:bg-white transition-colors" style={{ width: `${(currentTime/duration)*100}%` }}></div>
+                         {/* Track Info */}
+                         <div className="flex-1 min-w-0 z-10 flex flex-col justify-center">
+                              <h4 className="text-white font-bold text-sm truncate pr-4">{currentTrack?.title}</h4>
+                              <div className="flex items-center gap-2">
+                                  <span className="text-[10px] text-acid font-mono uppercase truncate">{currentTrack?.artist}</span>
+                                  <span className="text-[9px] text-slate-500 font-mono hidden md:inline-block">
+                                      {Math.floor(currentTime/60)}:{Math.floor(currentTime%60).toString().padStart(2,'0')} / {Math.floor(duration/60)}:{Math.floor(duration%60).toString().padStart(2,'0')}
+                                  </span>
                               </div>
                          </div>
 
-                         <div className="w-1/3 flex justify-end gap-4">
-                             <button onClick={() => setShowLyrics(!showLyrics)} className="text-[10px] font-bold uppercase border border-white/20 px-3 py-1 text-slate-400 hover:text-white hover:border-white transition-all">Lyrics</button>
+                         {/* Controls */}
+                         <div className="flex items-center gap-3 z-10">
+                              <button className="text-slate-500 hover:text-white transition-colors p-2"><svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg></button>
+                              
+                              <button onClick={() => { if(audioRef.current?.paused) audioRef.current.play(); else audioRef.current?.pause(); setPlayingId(null); }} className="w-10 h-10 rounded-full bg-white text-black hover:bg-acid hover:scale-110 transition-all flex items-center justify-center shadow-lg">
+                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                              </button>
+
+                              <button className="text-slate-500 hover:text-white transition-colors p-2"><svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg></button>
+                              
+                              <div className="w-px h-6 bg-white/10 mx-1"></div>
+
+                              <button onClick={() => setShowLyrics(!showLyrics)} className={`text-[10px] font-bold uppercase px-2 py-1 rounded border transition-all ${showLyrics ? 'bg-acid text-black border-acid' : 'text-slate-400 border-white/20 hover:text-white'}`}>
+                                  LRC
+                              </button>
+
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); setPlayingId(null); }} 
+                                className="w-8 h-8 rounded-full bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white flex items-center justify-center transition-all ml-1"
+                                title="Close Player"
+                              >
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                              </button>
                          </div>
                     </div>
-                    {currentTrack && (
-                        <audio 
-                            ref={audioRef} 
-                            src={getAudioSrc(currentTrack)} 
-                            autoPlay 
-                            onTimeUpdate={handleTimeUpdate}
-                            onEnded={() => setPlayingId(null)} 
-                            {...{ referrerPolicy: "no-referrer" } as any} 
-                        />
-                    )}
                 </div>
+
+                {/* HIDDEN AUDIO ELEMENT */}
+                {currentTrack && (
+                    <audio 
+                        ref={audioRef} 
+                        src={getAudioSrc(currentTrack)} 
+                        autoPlay 
+                        onTimeUpdate={handleTimeUpdate}
+                        onEnded={() => setPlayingId(null)} 
+                        {...{ referrerPolicy: "no-referrer" } as any} 
+                        className="hidden"
+                    />
+                )}
         </div>
     );
 
