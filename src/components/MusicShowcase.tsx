@@ -222,7 +222,7 @@ const SectionHeader = ({ title, sub, onMore, color="acid" }: { title: string, su
             
             {onMore && (
                 <button onClick={onMore} className="hidden md:flex items-center gap-2 px-6 py-2 border border-white/10 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-black hover:bg-white transition-all rounded-full hover:px-8">
-                    查看全部 <span className="text-xs">→</span>
+                    查看全部 <span className="text-xs">&rarr;</span>
                 </button>
             )}
         </div>
@@ -246,7 +246,7 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
     const handleAdminClick = () => {
         const storedPwd = localStorage.getItem('admin_password');
         if (storedPwd) {
-            // Auto login check (optional, but good for UX)
+            // Auto login check
             storageService.verifyAuth(storedPwd).then(valid => {
                 if (valid) setAdminMode(true);
                 else setShowLoginModal(true);
@@ -436,7 +436,7 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
                             <Marquee text="CINEMA EXPERIENCE" opacity={0.05} />
                             <div className="relative z-10 -mt-20">
                                 <SectionHeader title="影视中心" sub="Cinema_Database" color="orange" onMore={() => props.onNavigate('video')} />
-                                <VideoGrid videos={props.videos.slice(0, 10)} onPauseMusic={handlePauseMusic} />
+                                <VideoGrid videos={props.videos} onPauseMusic={handlePauseMusic} />
                             </div>
                         </section>
 
@@ -444,7 +444,7 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
                             <Marquee text="SONIC ARCHITECTURE" reverse opacity={0.05} />
                             <div className="relative z-10 -mt-20">
                                 <SectionHeader title="精选音乐" sub="Featured_Tracks" color="acid" onMore={() => props.onNavigate('music')} />
-                                <MusicGrid tracks={props.tracks.slice(0, 8)} onPlay={handlePlay} playingId={playingId} />
+                                <MusicGrid tracks={props.tracks} onPlay={handlePlay} playingId={playingId} />
                             </div>
                         </section>
 
