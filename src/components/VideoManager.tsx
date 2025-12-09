@@ -1,4 +1,3 @@
-
 // src/components/VideoManager.tsx
 
 import React, { useState, useRef } from 'react';
@@ -76,17 +75,32 @@ export const VideoManager: React.FC<VideoManagerProps> = ({ videos, categories, 
               sourceType: state.sourceType,
               category: videoCats.find(c => c.id === state.categoryId)?.name || 'General',
               categoryId: state.categoryId,
-              addedAt: Date.now(),
+              addedAt: mode === 'edit' ? (videos.find(v => v.id === editingId)?.addedAt || Date.now()) : Date.now(),
               description: state.description,
               isHero: state.isHero,
               adSlogan: state.adSlogan
           };
           
-          let updatedVideos;
-          if (mode === 'edit') {
-              updatedVideos = videos.map(v => v.id === editingId ? videoData : v);
+          let updatedVideos: Video[] = [];
+
+          // Critical: Handle Hero Exclusivity
+          // If this video is set to Hero, set all others to false.
+          if (videoData.isHero) {
+              if (mode === 'edit') {
+                  updatedVideos = videos.map(v => {
+                      if (v.id === editingId) return videoData;
+                      return { ...v, isHero: false };
+                  });
+              } else {
+                  updatedVideos = [videoData, ...videos.map(v => ({ ...v, isHero: false }))];
+              }
           } else {
-              updatedVideos = [videoData, ...videos];
+              // Standard update
+              if (mode === 'edit') {
+                  updatedVideos = videos.map(v => v.id === editingId ? videoData : v);
+              } else {
+                  updatedVideos = [videoData, ...videos];
+              }
           }
 
           onUpdate(updatedVideos);
@@ -138,7 +152,7 @@ export const VideoManager: React.FC<VideoManagerProps> = ({ videos, categories, 
             placeholder="广告语 (Hero Ad Slogan) - 仅在首页/Hero位置显示" 
             value={state.adSlogan} 
             onChange={e => setState({...state, adSlogan: e.target.value})} 
-            className="w-full bg-black border border-orange-500/30 p-3 rounded text-orange-200 placeholder-orange-500/50"
+            className="w-full bg-black border border-orange-500/30 p-3 rounded text-orange-200 placeholder-orange-500/50 focus:border-orange-500 outline-none"
           />
 
           <textarea placeholder="视频简介..." value={state.description} onChange={e => setState({...state, description: e.target.value})} className="w-full bg-black border border-white/20 p-3 rounded text-white h-20 resize-none"/>
@@ -153,12 +167,32 @@ export const VideoManager: React.FC<VideoManagerProps> = ({ videos, categories, 
               <input type="text" placeholder="MP4 URL..." value={state.videoUrl} onChange={e => setState({...state, videoUrl: e.target.value})} className="w-full bg-black border border-white/20 p-3 rounded text-white font-mono text-sm"/>
           )}
           
-          <label className="flex items-center gap-3 p-3 border border-white/10 rounded cursor-pointer hover:bg-white/5">
-                <input type="checkbox" checked={state.isHero} onChange={e => setState({...state, isHero: e.target.checked})} />
-                <span className="text-sm text-slate-300">设为主推视频 (Home Hero)</span>
+          <div className="p-4 border border-dashed border-white/20 rounded cursor-pointer" onClick={() => coverInputRef.current?.click()}>
+                {state.cover ? (
+                    <div className="flex items-center gap-2">
+                        <img src={state.cover} className="w-16 h-9 rounded object-cover" />
+                        <span className="text-orange-500 text-xs">封面已就绪</span>
+                    </div>
+                ) : <span className="text-xs text-slate-500">上传封面图 (推荐 16:9)</span>}
+                <input type="file" ref={coverInputRef} onChange={async (e) => {
+                    if(e.target.files?.[0]) {
+                        try {
+                            const url = await storageService.uploadFile(e.target.files[0]);
+                            setState(p => ({...p, cover: url}));
+                        } catch(e){}
+                    }
+                }} className="hidden"/>
+          </div>
+
+          <label className="flex items-center gap-3 p-3 border border-white/10 rounded cursor-pointer hover:bg-white/5 transition-colors">
+                <input type="checkbox" checked={state.isHero} onChange={e => setState({...state, isHero: e.target.checked})} className="accent-orange-500 w-4 h-4"/>
+                <div className="flex flex-col">
+                    <span className="text-sm font-bold text-white">设为主推视频 (Hero Track)</span>
+                    <span className="text-[10px] text-slate-500">选中后，该视频将占据首页和影视中心顶部大屏 (会自动替换旧的主推)。</span>
+                </div>
           </label>
 
-          <button onClick={handleSubmit} disabled={state.isUploading} className="w-full py-3 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded">
+          <button onClick={handleSubmit} disabled={state.isUploading} className="w-full py-3 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
               {state.isUploading ? '处理中...' : (mode === 'edit' ? '保存修改' : '发布视频')}
           </button>
       </div>
@@ -166,17 +200,20 @@ export const VideoManager: React.FC<VideoManagerProps> = ({ videos, categories, 
       {/* List */}
       <div className="space-y-2">
           {videos.map(v => (
-              <div key={v.id} className="flex items-center gap-4 p-3 bg-[#1a1a1a] rounded border border-white/5 hover:border-orange-500/30">
-                  <img src={v.coverUrl} className="w-20 h-12 object-cover rounded bg-black" />
-                  <div className="flex-1">
-                      <div className="font-bold text-white flex items-center gap-2">
-                          {v.title}
-                          {v.isHero && <span className="text-[10px] bg-orange-500 text-black px-1.5 rounded font-bold">HERO</span>}
-                      </div>
-                      <div className="text-xs text-slate-500">{v.category} • {v.author}</div>
+              <div key={v.id} className={`flex items-center gap-4 p-3 bg-[#1a1a1a] rounded border transition-colors ${v.isHero ? 'border-orange-500/50' : 'border-white/5 hover:border-orange-500/30'}`}>
+                  <div className="relative w-20 h-12 shrink-0">
+                      <img src={v.coverUrl} className="w-full h-full object-cover rounded bg-black" />
+                      {v.isHero && <div className="absolute top-0 left-0 w-full h-full border-2 border-orange-500 rounded pointer-events-none"></div>}
                   </div>
-                  <button onClick={() => handleEdit(v)} className="px-3 py-1 bg-white/10 rounded text-xs hover:bg-white/20">编辑</button>
-                  <button onClick={() => handleDelete(v.id)} className="px-3 py-1 bg-red-500/20 text-red-500 rounded text-xs hover:bg-red-500 hover:text-white">删除</button>
+                  <div className="flex-1 min-w-0">
+                      <div className="font-bold text-white flex items-center gap-2 truncate">
+                          {v.title}
+                          {v.isHero && <span className="text-[9px] bg-orange-500 text-black px-1.5 py-0.5 rounded font-black uppercase tracking-wider">HERO</span>}
+                      </div>
+                      <div className="text-xs text-slate-500 truncate">{v.category} • {v.author}</div>
+                  </div>
+                  <button onClick={() => handleEdit(v)} className="px-3 py-1 bg-white/10 rounded text-xs hover:bg-white/20 transition-colors">编辑</button>
+                  <button onClick={() => handleDelete(v.id)} className="px-3 py-1 bg-red-500/20 text-red-500 rounded text-xs hover:bg-red-500 hover:text-white transition-colors">删除</button>
               </div>
           ))}
       </div>
