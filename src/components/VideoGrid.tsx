@@ -159,6 +159,7 @@ export const HomeVideoWidget = ({ videos, onWatch }: { videos: Video[], onWatch:
                 onClick={() => onWatch(hero)}
                 className="lg:col-span-8 relative rounded-2xl overflow-hidden group cursor-pointer border border-white/10 hover:border-orange-500/50 transition-all"
             >
+                {/* Background Video (Muted for Autoplay) or Image */}
                 <div className="absolute inset-0">
                     {hero.videoUrl ? (
                         <video 
@@ -188,7 +189,7 @@ export const HomeVideoWidget = ({ videos, onWatch }: { videos: Video[], onWatch:
                          </div>
                     )}
                     <h3 className="text-4xl md:text-5xl font-display font-black text-white mb-2 leading-none uppercase text-shadow-lg">{hero.title}</h3>
-                    <p className="text-slate-300 text-sm line-clamp-2 max-w-xl mb-6">{hero.description || "A cinematic masterpiece."}</p>
+                    <p className="text-slate-300 text-sm line-clamp-2 max-w-xl mb-6">{hero.description || "A cinematic masterpiece. Experience visual storytelling at its finest."}</p>
                     <button className="px-6 py-3 bg-white text-black font-bold uppercase tracking-widest rounded flex items-center gap-2 hover:bg-orange-500 transition-colors">
                         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                         立即播放
@@ -266,7 +267,7 @@ export const VideoGrid: React.FC<VideoGridProps> = ({ videos, onPauseMusic }) =>
 
   if (!videos.length) return null;
 
-  // 1. Determine Hero (Fix: Should re-evaluate when videos prop changes)
+  // 1. Determine Hero (Re-evaluate when videos prop changes to reflect Manager updates)
   const heroVideo = videos.find(v => v.isHero) || videos[0];
   const otherVideos = videos.filter(v => v.id !== heroVideo.id);
 
@@ -320,7 +321,7 @@ export const VideoGrid: React.FC<VideoGridProps> = ({ videos, onPauseMusic }) =>
               {/* --- AD SLOGAN --- */}
               {heroVideo.adSlogan && (
                   <div className="opacity-0 translate-y-4 animate-slide-up mb-4" style={{ animationDelay: '0.3s' }}>
-                      <span className="text-lg md:text-2xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-500 uppercase tracking-wide drop-shadow-xl border-l-4 border-orange-500 pl-4">
+                      <span className="text-2xl md:text-4xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-500 uppercase tracking-wide drop-shadow-xl border-l-4 border-orange-500 pl-4">
                           {heroVideo.adSlogan}
                       </span>
                   </div>
