@@ -1,3 +1,4 @@
+
 // src/components/VideoManager.tsx
 
 import React, { useState, useRef } from 'react';
@@ -22,7 +23,7 @@ export const VideoManager: React.FC<VideoManagerProps> = ({ videos, categories, 
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const [state, setState] = useState({
-      title: '', author: '', videoUrl: '', sourceType: 'local' as 'local' | 'external', categoryId: '', cover: '', description: '', isHero: false, isUploading: false
+      title: '', author: '', videoUrl: '', sourceType: 'local' as 'local' | 'external', categoryId: '', cover: '', description: '', isHero: false, adSlogan: '', isUploading: false
   });
   const coverInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
@@ -30,7 +31,7 @@ export const VideoManager: React.FC<VideoManagerProps> = ({ videos, categories, 
   const videoCats = categories.filter(c => c.type === 'video');
 
   const resetForm = () => {
-      setState({ title: '', author: '', videoUrl: '', sourceType: 'local', categoryId: '', cover: '', description: '', isHero: false, isUploading: false });
+      setState({ title: '', author: '', videoUrl: '', sourceType: 'local', categoryId: '', cover: '', description: '', isHero: false, adSlogan: '', isUploading: false });
       setMode('create');
       setEditingId(null);
   };
@@ -45,6 +46,7 @@ export const VideoManager: React.FC<VideoManagerProps> = ({ videos, categories, 
           cover: video.coverUrl,
           description: video.description || '',
           isHero: !!video.isHero,
+          adSlogan: video.adSlogan || '',
           isUploading: false
       });
       setEditingId(video.id);
@@ -76,7 +78,8 @@ export const VideoManager: React.FC<VideoManagerProps> = ({ videos, categories, 
               categoryId: state.categoryId,
               addedAt: Date.now(),
               description: state.description,
-              isHero: state.isHero
+              isHero: state.isHero,
+              adSlogan: state.adSlogan
           };
           
           let updatedVideos;
@@ -129,6 +132,15 @@ export const VideoManager: React.FC<VideoManagerProps> = ({ videos, categories, 
                   </select>
               </div>
           </div>
+          
+          <input 
+            type="text" 
+            placeholder="广告语 (Hero Ad Slogan) - 仅在首页/Hero位置显示" 
+            value={state.adSlogan} 
+            onChange={e => setState({...state, adSlogan: e.target.value})} 
+            className="w-full bg-black border border-orange-500/30 p-3 rounded text-orange-200 placeholder-orange-500/50"
+          />
+
           <textarea placeholder="视频简介..." value={state.description} onChange={e => setState({...state, description: e.target.value})} className="w-full bg-black border border-white/20 p-3 rounded text-white h-20 resize-none"/>
           
           <div className="flex gap-4">
