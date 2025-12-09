@@ -8,11 +8,11 @@ import { ArticleView } from './ArticleView';
 import { storageService } from '../services/storageService';
 
 // Module Imports
-import { MusicGrid, HomeMusicWidget } from './MusicGrid';
+import { MusicGrid } from './MusicGrid';
 import { MusicManager } from './MusicManager';
-import { VideoGrid, HomeVideoWidget } from './VideoGrid';
+import { VideoGrid } from './VideoGrid';
 import { VideoManager } from './VideoManager';
-import { ArticleGrid, HomeArticleWidget } from './ArticleGrid';
+import { ArticleGrid } from './ArticleGrid';
 import { ArticleManager } from './ArticleManager';
 import { GalleryGrid } from './GalleryGrid';
 import { GalleryManager } from './GalleryManager';
@@ -169,11 +169,11 @@ const ArrangementMasterDropdown = ({ onNavigate }: { onNavigate: (v: string) => 
 
 
 // --- NAVBAR ---
-const Navbar = ({ onNavigate, onAdmin, onSettings, currentView }: any) => (
-    <nav className="fixed top-0 left-0 w-full z-[100] flex justify-between items-center px-4 md:px-8 py-4 bg-[#050505]/80 backdrop-blur-md border-b border-white/5 transition-all duration-300">
+const Navbar = ({ onNavigate, onAdmin, onSettings, currentView, transparent = false }: any) => (
+    <nav className={`fixed top-0 left-0 w-full z-[100] flex justify-between items-center px-4 md:px-8 py-4 transition-all duration-300 ${transparent ? 'bg-transparent border-transparent' : 'bg-[#050505]/80 backdrop-blur-md border-b border-white/5'}`}>
         <div onClick={() => onNavigate('home')} className="cursor-pointer group flex items-center gap-2">
              <div className="w-6 h-6 bg-acid rounded-sm shadow-[0_0_10px_#ccff00]"></div>
-             <div className="font-display font-black text-2xl tracking-tighter text-white leading-none">NEXUS</div>
+             <div className="font-display font-black text-2xl tracking-tighter text-white leading-none drop-shadow-md">NEXUS</div>
         </div>
         
         {/* Desktop Nav */}
@@ -188,7 +188,7 @@ const Navbar = ({ onNavigate, onAdmin, onSettings, currentView }: any) => (
                  <button 
                     key={v.id}
                     onClick={() => onNavigate(v.id)} 
-                    className={`px-6 py-2 text-xs font-bold uppercase tracking-widest transition-all clip-path-slant ${currentView === v.id ? 'bg-white text-black' : 'text-slate-400 hover:text-acid hover:bg-white/5'}`}
+                    className={`px-6 py-2 text-xs font-bold uppercase tracking-widest transition-all clip-path-slant ${currentView === v.id ? 'bg-white text-black' : 'text-slate-400 hover:text-acid hover:bg-white/5 shadow-sm'}`}
                  >
                     {v.label}
                  </button>
@@ -201,10 +201,10 @@ const Navbar = ({ onNavigate, onAdmin, onSettings, currentView }: any) => (
                 <ArrangementMasterDropdown onNavigate={onNavigate} />
             </div>
             
-            <button onClick={onAdmin} className="w-8 h-8 flex items-center justify-center border border-white/10 hover:border-acid/50 text-slate-400 hover:text-acid transition-colors bg-black rounded">
+            <button onClick={onAdmin} className="w-8 h-8 flex items-center justify-center border border-white/10 hover:border-acid/50 text-slate-400 hover:text-acid transition-colors bg-black/50 backdrop-blur rounded">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
             </button>
-            <button onClick={onSettings} className="w-8 h-8 flex items-center justify-center border border-white/10 hover:border-acid/50 text-slate-400 hover:text-acid transition-colors bg-black rounded">
+            <button onClick={onSettings} className="w-8 h-8 flex items-center justify-center border border-white/10 hover:border-acid/50 text-slate-400 hover:text-acid transition-colors bg-black/50 backdrop-blur rounded">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
             </button>
         </div>
@@ -360,6 +360,17 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
         );
     }
 
+    // --- VIDEO PORTAL (FULLSCREEN) ---
+    if (props.currentView === 'video') {
+        return (
+            <div className="min-h-screen bg-[#050505] text-white">
+                <Navbar onNavigate={props.onNavigate} onAdmin={handleAdminClick} onSettings={props.onOpenSettings} currentView={props.currentView} transparent={true} />
+                <AdminLoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} onLogin={handleLoginSubmit} />
+                <VideoGrid videos={props.videos} onPauseMusic={handlePauseMusic} />
+            </div>
+        );
+    }
+
     // --- HOME PORTAL (BENTO GRID DESIGN) ---
     if (props.currentView === 'home') {
         return (
@@ -447,7 +458,10 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
                             <Marquee text="CINEMA EXPERIENCE" opacity={0.05} />
                             <div className="relative z-10 -mt-20">
                                 <SectionHeader title="影视中心" sub="Cinema_Database" color="orange" onMore={() => props.onNavigate('video')} />
-                                <HomeVideoWidget videos={props.videos} onWatch={(v) => { props.onNavigate('video'); }} />
+                                <div className="hidden lg:block">
+                                    <VideoGrid videos={props.videos} onPauseMusic={handlePauseMusic} />
+                                </div>
+                                <div className="lg:hidden text-center text-slate-500 text-xs py-4">请在视频中心查看完整内容</div>
                             </div>
                         </section>
 
@@ -456,7 +470,7 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
                             <Marquee text="SONIC ARCHITECTURE" reverse opacity={0.05} />
                             <div className="relative z-10 -mt-20">
                                 <SectionHeader title="精选音乐" sub="Featured_Tracks" color="acid" onMore={() => props.onNavigate('music')} />
-                                <HomeMusicWidget tracks={props.tracks} onPlay={handlePlay} playingId={playingId} />
+                                <MusicGrid tracks={props.tracks} onPlay={handlePlay} playingId={playingId} />
                             </div>
                         </section>
 
@@ -464,7 +478,7 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
                             <section>
                                 <SectionHeader title="深度专栏" sub="Editorial_Hub" color="cyber" onMore={() => props.onNavigate('article')} />
-                                <HomeArticleWidget articles={props.articles.slice(0, 4)} onRead={setReadingArticle} />
+                                <ArticleGrid articles={props.articles.slice(0, 4)} onRead={setReadingArticle} />
                             </section>
                             <section>
                                 <SectionHeader title="视觉画廊" sub="Gallery_Arts" color="neon" onMore={() => props.onNavigate('gallery')} />
@@ -675,7 +689,6 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
         </div>
     );
 
-    if (props.currentView === 'video') return <SimpleLayout title="影视中心" subtitle="Cinema_Database" color="orange"><VideoGrid videos={props.videos} onPauseMusic={handlePauseMusic} /></SimpleLayout>;
     if (props.currentView === 'music') return <SimpleLayout title="精选音乐" subtitle="Sonic_Archive" color="acid"><MusicGrid tracks={props.tracks} onPlay={handlePlay} playingId={playingId} /></SimpleLayout>;
     if (props.currentView === 'article') return <SimpleLayout title="深度专栏" subtitle="Editorial_Hub" color="cyber"><ArticleGrid articles={props.articles} onRead={setReadingArticle} /></SimpleLayout>;
     if (props.currentView === 'gallery') return <SimpleLayout title="视觉画廊" subtitle="Visual_Arts" color="neon"><GalleryGrid images={props.gallery} /></SimpleLayout>;
