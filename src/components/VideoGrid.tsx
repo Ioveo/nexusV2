@@ -1,7 +1,6 @@
-
 // src/components/VideoGrid.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Video } from '../types';
 
 interface VideoGridProps {
@@ -9,78 +8,139 @@ interface VideoGridProps {
   onPauseMusic?: () => void;
 }
 
-// --- HOME WIDGET (Dashboard Version) ---
-export const HomeVideoWidget = ({ videos, onWatch }: { videos: Video[], onWatch: (v: Video) => void }) => {
-    if (videos.length === 0) return null;
-    const hero = videos.find(v => v.isHero) || videos[0];
-    const trending = videos.filter(v => v.id !== hero.id).slice(0, 3);
+// --- CUSTOM IMMERSIVE PLAYER ---
+const CustomVideoPlayer = ({ video, onClose }: { video: Video, onClose: () => void }) => {
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [isPlaying, setIsPlaying] = useState(true);
+    const [progress, setProgress] = useState(0);
+    const [duration, setDuration] = useState(0);
+    const [currentTime, setCurrentTime] = useState(0);
+    const [volume, setVolume] = useState(1);
+    const [showControls, setShowControls] = useState(true);
+    const controlTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Auto-hide controls
+    useEffect(() => {
+        const handleMouseMove = () => {
+            setShowControls(true);
+            if (controlTimeoutRef.current) clearTimeout(controlTimeoutRef.current);
+            controlTimeoutRef.current = setTimeout(() => {
+                if (isPlaying) setShowControls(false);
+            }, 3000);
+        };
+
+        window.addEventListener('mousemove', handleMouseMove);
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            if (controlTimeoutRef.current) clearTimeout(controlTimeoutRef.current);
+        };
+    }, [isPlaying]);
+
+    const togglePlay = () => {
+        if (!videoRef.current) return;
+        if (videoRef.current.paused) {
+            videoRef.current.play();
+            setIsPlaying(true);
+        } else {
+            videoRef.current.pause();
+            setIsPlaying(false);
+        }
+    };
+
+    const handleTimeUpdate = () => {
+        if (!videoRef.current) return;
+        const current = videoRef.current.currentTime;
+        const dur = videoRef.current.duration;
+        setCurrentTime(current);
+        setDuration(dur);
+        setProgress((current / dur) * 100);
+    };
+
+    const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (!videoRef.current || !duration) return;
+        const rect = e.currentTarget.getBoundingClientRect();
+        const pos = (e.clientX - rect.left) / rect.width;
+        videoRef.current.currentTime = pos * duration;
+    };
+
+    const toggleFullscreen = () => {
+        if (!containerRef.current) return;
+        if (document.fullscreenElement) {
+            document.exitFullscreen();
+        } else {
+            containerRef.current.requestFullscreen();
+        }
+    };
+
+    const formatTime = (time: number) => {
+        const mins = Math.floor(time / 60);
+        const secs = Math.floor(time % 60);
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-auto lg:h-[500px]">
-            {/* Left Hero */}
-            <div 
-                onClick={() => onWatch(hero)}
-                className="lg:col-span-8 relative rounded-2xl overflow-hidden group cursor-pointer border border-white/10 hover:border-orange-500/50 transition-all"
-            >
-                {/* Background Video (Muted for Autoplay) or Image */}
-                <div className="absolute inset-0">
-                    {hero.videoUrl ? (
-                        <video 
-                            src={hero.videoUrl} 
-                            className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-700" 
-                            autoPlay 
-                            muted 
-                            loop 
-                            playsInline 
-                        />
-                    ) : (
-                        <img src={hero.coverUrl} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-700" />
-                    )}
-                </div>
-                
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent"></div>
-                
-                <div className="absolute top-4 left-4 flex gap-2">
-                    <span className="bg-[#e50914] text-white text-[10px] font-black uppercase px-2 py-1 rounded shadow-lg">NEXUS ORIGINAL</span>
-                    <span className="bg-black/50 backdrop-blur text-white text-[10px] font-bold uppercase px-2 py-1 rounded border border-white/20">4K HDR</span>
-                </div>
-
-                <div className="absolute bottom-0 left-0 p-8 w-full">
-                    {hero.adSlogan && (
-                         <div className="inline-block px-3 py-1 bg-orange-500/20 border border-orange-500/50 backdrop-blur rounded text-orange-400 text-xs font-bold uppercase tracking-widest mb-3">
-                             {hero.adSlogan}
-                         </div>
-                    )}
-                    <h3 className="text-4xl md:text-5xl font-display font-black text-white mb-2 leading-none uppercase text-shadow-lg">{hero.title}</h3>
-                    <p className="text-slate-300 text-sm line-clamp-2 max-w-xl mb-6">{hero.description || "A cinematic masterpiece. Experience visual storytelling at its finest."}</p>
-                    <button className="px-6 py-3 bg-white text-black font-bold uppercase tracking-widest rounded flex items-center gap-2 hover:bg-orange-500 transition-colors">
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                        立即播放
-                    </button>
-                </div>
+        <div ref={containerRef} className="fixed inset-0 z-[200] bg-black group flex flex-col justify-center overflow-hidden">
+            <video 
+                ref={videoRef}
+                src={video.videoUrl} 
+                className="w-full h-full object-contain"
+                autoPlay 
+                onClick={togglePlay}
+                onTimeUpdate={handleTimeUpdate}
+                onEnded={() => setIsPlaying(false)}
+            />
+            
+            {/* Top Bar (Close Button) */}
+            <div className={`absolute top-0 left-0 w-full p-6 flex justify-end transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
+                <button onClick={onClose} className="bg-black/50 hover:bg-white/20 p-2 rounded-full backdrop-blur-md transition-colors text-white">
+                    <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
             </div>
 
-            {/* Right List */}
-            <div className="lg:col-span-4 flex flex-col gap-4">
-                {trending.map((v, i) => (
-                    <div 
-                        key={v.id} 
-                        onClick={() => onWatch(v)}
-                        className="flex-1 flex gap-4 p-3 bg-[#111] rounded-xl border border-white/5 hover:border-white/30 cursor-pointer group transition-all"
-                    >
-                        <div className="w-32 h-full bg-slate-900 rounded-lg overflow-hidden relative shrink-0">
-                             <img src={v.coverUrl} className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity" />
-                             <div className="absolute top-1 left-1 w-6 h-6 bg-black/60 backdrop-blur rounded flex items-center justify-center text-xs font-bold text-white border border-white/10">
-                                 {i + 1}
-                             </div>
-                        </div>
-                        <div className="flex flex-col justify-center min-w-0 py-1">
-                            <div className="text-[10px] text-orange-500 font-bold uppercase tracking-wider mb-1">{v.category}</div>
-                            <h4 className="text-white font-bold leading-tight mb-1 truncate group-hover:text-orange-500 transition-colors">{v.title}</h4>
-                            <p className="text-[10px] text-slate-500 font-mono uppercase">Directed by {v.author}</p>
+            {/* Bottom Controls Overlay */}
+            <div className={`absolute bottom-0 left-0 w-full bg-gradient-to-t from-black via-black/80 to-transparent pt-32 pb-8 px-8 md:px-12 transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
+                
+                {/* Title info */}
+                <div className="mb-4">
+                    <h3 className="text-2xl font-bold text-white mb-1">{video.title}</h3>
+                    <p className="text-sm text-slate-300">{video.author} • {video.category}</p>
+                </div>
+
+                {/* Progress Bar */}
+                <div 
+                    className="w-full h-2 bg-white/20 rounded-full cursor-pointer mb-6 relative group/bar"
+                    onClick={handleSeek}
+                >
+                    <div className="absolute top-0 left-0 h-full bg-orange-500 rounded-full relative" style={{ width: `${progress}%` }}>
+                        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full opacity-0 group-hover/bar:opacity-100 shadow-lg scale-0 group-hover/bar:scale-100 transition-all"></div>
+                    </div>
+                </div>
+
+                {/* Control Buttons */}
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-6">
+                        <button onClick={togglePlay} className="text-white hover:text-orange-500 transition-colors">
+                            {isPlaying ? (
+                                <svg className="w-10 h-10 fill-current" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                            ) : (
+                                <svg className="w-10 h-10 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                            )}
+                        </button>
+                        
+                        <div className="flex items-center gap-2 text-sm font-mono text-slate-300">
+                            <span>{formatTime(currentTime)}</span>
+                            <span className="text-slate-600">/</span>
+                            <span>{formatTime(duration)}</span>
                         </div>
                     </div>
-                ))}
+
+                    <div className="flex items-center gap-6">
+                        <button onClick={toggleFullscreen} className="text-white hover:text-orange-500 transition-colors">
+                            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     );
@@ -152,10 +212,10 @@ export const VideoGrid: React.FC<VideoGridProps> = ({ videos, onPauseMusic }) =>
   };
 
   return (
-    <div className="w-full -mt-8">
+    <div className="w-full">
       
-      {/* --- BILLBOARD HERO --- */}
-      <div className="relative w-full h-[65vh] md:h-[85vh] mb-8 group overflow-hidden">
+      {/* --- BILLBOARD HERO (FULL SCREEN) --- */}
+      <div className="relative w-full h-screen mb-8 group overflow-hidden">
           <div className="absolute inset-0 pointer-events-none">
                {/* 
                   Use Video for background if available. 
@@ -175,9 +235,9 @@ export const VideoGrid: React.FC<VideoGridProps> = ({ videos, onPauseMusic }) =>
               <div className="absolute inset-0 bg-gradient-to-r from-[#050505] via-[#050505]/40 to-transparent"></div>
           </div>
           
-          <div className="absolute bottom-0 left-0 w-full p-8 md:p-16 lg:p-24 flex flex-col items-start justify-end h-full z-10">
+          <div className="absolute bottom-0 left-0 w-full p-8 md:p-16 lg:p-24 flex flex-col items-start justify-end h-full z-10 pb-32">
               <div className="flex items-center gap-3 mb-4 opacity-0 translate-y-4 animate-slide-up" style={{ animationDelay: '0.2s' }}>
-                  <span className="bg-[#e50914] text-white text-[10px] font-black uppercase px-2 py-0.5 rounded shadow-lg shadow-red-500/20">NEXUS 原创</span>
+                  <span className="bg-[#e50914] text-white text-[10px] font-black uppercase px-2 py-0.5 rounded shadow-lg shadow-red-500/20">NEXUS ORIGINAL</span>
                   <span className="bg-white/10 backdrop-blur text-white text-[10px] font-bold uppercase px-2 py-0.5 rounded border border-white/10">4K HDR</span>
               </div>
               
@@ -242,51 +302,9 @@ export const VideoGrid: React.FC<VideoGridProps> = ({ videos, onPauseMusic }) =>
           ))}
       </div>
 
-      {/* --- IMMERSIVE MODAL --- */}
+      {/* --- IMMERSIVE CUSTOM PLAYER MODAL --- */}
       {playingVideo && (
-          <div className="fixed inset-0 z-[200] bg-black animate-fade-in flex flex-col items-center justify-center">
-              {/* Top Bar (Close) */}
-              <div className="absolute top-0 left-0 w-full p-4 flex justify-end z-[220] pointer-events-none">
-                  <button 
-                      onClick={() => setPlayingVideo(null)}
-                      className="pointer-events-auto text-white/70 hover:text-white p-2 bg-black/50 rounded-full backdrop-blur transition-all"
-                  >
-                      <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                  </button>
-              </div>
-              
-              {/* Video Container - Constrained to Viewport to ensure controls are visible */}
-              <div className="w-full h-full flex flex-col">
-                  <div className="flex-1 bg-black relative flex items-center justify-center overflow-hidden">
-                      {/* 
-                        Use object-contain and max-h-screen to ensure the whole video, including controls, 
-                        is visible within the viewport.
-                      */}
-                      <video 
-                        src={playingVideo.videoUrl} 
-                        controls 
-                        autoPlay 
-                        className="w-full h-full object-contain max-h-[85vh] shadow-2xl"
-                      />
-                  </div>
-                  
-                  {/* Footer Info */}
-                  <div className="h-[15vh] bg-[#0a0a0a] border-t border-white/10 px-8 md:px-16 flex items-center justify-between shrink-0 z-[210]">
-                      <div>
-                          <div className="flex items-center gap-3 mb-1">
-                              <span className="text-[10px] font-bold bg-white/10 text-white px-2 py-0.5 rounded">{playingVideo.category}</span>
-                              <span className="text-[10px] font-bold bg-acid/10 text-acid px-2 py-0.5 rounded">HD</span>
-                          </div>
-                          <h2 className="text-2xl md:text-3xl font-display font-bold text-white">{playingVideo.title}</h2>
-                          <p className="text-slate-500 text-sm font-mono mt-1">Directed by {playingVideo.author} // NEXUS STUDIOS</p>
-                      </div>
-                      <div className="text-right hidden md:block">
-                          <div className="text-white text-lg font-bold">即将播放</div>
-                          <div className="text-slate-500 text-sm">5秒后自动播放下一集...</div>
-                      </div>
-                  </div>
-              </div>
-          </div>
+          <CustomVideoPlayer video={playingVideo} onClose={() => setPlayingVideo(null)} />
       )}
     </div>
   );
