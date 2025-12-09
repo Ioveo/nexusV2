@@ -1,3 +1,4 @@
+
 // src/types.ts
 
 export interface SongSection {
@@ -58,7 +59,7 @@ export interface GalleryTrack {
   addedAt: number;
   lyrics?: string;
   categoryId?: string;
-  isHero?: boolean; // NEW
+  isHero?: boolean; 
 }
 
 export interface Article {
@@ -71,7 +72,7 @@ export interface Article {
   trackId?: string;
   publishedAt: number;
   categoryId?: string;
-  isHero?: boolean; // NEW
+  isHero?: boolean; 
 }
 
 export interface GalleryImage {
@@ -93,7 +94,8 @@ export interface Video {
   categoryId?: string;
   addedAt: number;
   description?: string;
-  isHero?: boolean; // NEW
+  isHero?: boolean;
+  adSlogan?: string; // NEW: Advertising Slogan
 }
 
 export interface Category {
