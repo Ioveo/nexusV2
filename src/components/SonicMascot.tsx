@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 interface SonicMascotProps {
   isPlaying: boolean;
   audioData?: Uint8Array; // Optional real audio data
-  sourceType: 'local' | 'external' | null;
+  sourceType: 'local' | 'external' | 'netease' | 'qq' | 'link' | null;
 }
 
 export const SonicMascot: React.FC<SonicMascotProps> = ({ isPlaying, audioData, sourceType }) => {
