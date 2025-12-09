@@ -1,3 +1,4 @@
+
 // src/components/MusicShowcase.tsx
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -383,7 +384,7 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
                                     连接 <span className="text-acid font-bold">听觉</span> 与 <span className="text-neon font-bold">视觉</span> 的下一代智能终端。
                                 </p>
                                 <button onClick={() => props.onNavigate('music')} className="px-8 py-4 bg-white text-black font-bold uppercase tracking-widest hover:bg-acid hover:scale-105 transition-all w-full md:w-auto shadow-[0_0_20px_rgba(255,255,255,0.3)]">
-                                    探索媒体库 ->
+                                    探索媒体库 &rarr;
                                 </button>
                             </div>
                         </BentoCard>
