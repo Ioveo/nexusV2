@@ -1,3 +1,4 @@
+// src/components/ArticleGrid.tsx
 
 import React from 'react';
 import { Article } from '../types';
@@ -7,6 +8,28 @@ interface ArticleGridProps {
   onRead: (article: Article) => void;
 }
 
+// --- HOME WIDGET ---
+export const HomeArticleWidget = ({ articles, onRead }: ArticleGridProps) => {
+    if (!articles.length) return null;
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {articles.map(a => (
+                <div key={a.id} onClick={() => onRead(a)} className="bg-[#111] p-4 rounded-xl border border-white/10 hover:border-cyber/50 cursor-pointer group flex gap-4 transition-all">
+                    <div className="w-20 h-20 bg-black rounded overflow-hidden shrink-0">
+                        <img src={a.coverUrl} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" />
+                    </div>
+                    <div className="flex flex-col justify-center min-w-0">
+                        <div className="text-[9px] text-cyber font-mono uppercase mb-1">{new Date(a.publishedAt).toLocaleDateString()}</div>
+                        <h4 className="text-sm font-bold text-white leading-tight line-clamp-2 group-hover:text-cyber transition-colors">{a.title}</h4>
+                        <p className="text-[10px] text-slate-500 mt-1 truncate">By {a.author}</p>
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+};
+
+// --- MAIN GRID ---
 export const ArticleGrid: React.FC<ArticleGridProps> = ({ articles, onRead }) => {
   if (!articles || articles.length === 0) return null;
 
