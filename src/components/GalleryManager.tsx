@@ -12,7 +12,7 @@ interface GalleryManagerProps {
 export const GalleryManager: React.FC<GalleryManagerProps> = ({ images, onUpdate }) => {
   const [title, setTitle] = useState('');
   const [sourceType, setSourceType] = useState<'upload' | 'link'>('upload');
-  const [inputValue, setInputValue] = useState(''); // For link
+  const [inputValue, setInputValue] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -43,7 +43,6 @@ export const GalleryManager: React.FC<GalleryManagerProps> = ({ images, onUpdate
       onUpdate(updated);
       await storageService.saveGallery(updated);
       
-      // Reset
       setTitle('');
       setFile(null);
       setInputValue('');
@@ -58,61 +57,52 @@ export const GalleryManager: React.FC<GalleryManagerProps> = ({ images, onUpdate
 
   const handleDelete = async (id: string) => {
     if (!confirm("确定删除此图片？")) return;
-    const imgToDelete = images.find(i => i.id === id);
     const updated = images.filter(i => i.id !== id);
-    
     onUpdate(updated); 
-    
-    try {
-      await storageService.saveGallery(updated); 
-      // Removed: await storageService.deleteFile(...)
-    } catch (e) {
-      console.error("Delete sync error", e);
-    }
+    try { await storageService.saveGallery(updated); } catch (e) { console.error("Sync error", e); }
   };
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-8">
-          <h3 className="text-2xl font-bold text-white flex items-center gap-2">
-              <span className="w-2 h-8 bg-purple-500 rounded-full"></span>
-              画廊管理 <span className="text-sm font-mono text-slate-500 font-normal">({images.length} items)</span>
-          </h3>
+    <div className="max-w-7xl mx-auto space-y-8">
+      <div className="border-b border-white/10 pb-6">
+          <h3 className="text-3xl font-display font-bold text-white mb-1">视觉画廊管理</h3>
+          <p className="text-xs text-slate-500 font-mono">TOTAL ASSETS: {images.length}</p>
       </div>
       
-      {/* Input Area */}
-      <div className="bg-[#111] p-6 md:p-8 rounded-2xl border border-white/10 mb-10 shadow-xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-4 opacity-10">
-            <svg className="w-32 h-32 text-purple-500" fill="currentColor" viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+      {/* Upload Area */}
+      <div className="bg-[#111] p-8 rounded-2xl border border-white/10 relative overflow-hidden group">
+        <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none">
+            <svg className="w-64 h-64 text-purple-500" fill="currentColor" viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
         </div>
 
-        <div className="relative z-10 space-y-6">
-            <div className="flex gap-4">
-                <button onClick={() => setSourceType('upload')} className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${sourceType === 'upload' ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20' : 'bg-white/5 text-slate-400 hover:bg-white/10'}`}>本地上传 (R2)</button>
-                <button onClick={() => setSourceType('link')} className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${sourceType === 'link' ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20' : 'bg-white/5 text-slate-400 hover:bg-white/10'}`}>第三方链接</button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="space-y-6">
                 <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Title / Description</label>
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">作品标题 / 描述</label>
                     <input 
                         type="text" 
                         value={title} 
                         onChange={e => setTitle(e.target.value)} 
-                        placeholder="给这张图片起个名字..." 
-                        className="w-full bg-black border border-white/20 rounded-xl p-4 text-white outline-none focus:border-purple-500 transition-colors"
+                        placeholder="请输入..." 
+                        className="w-full bg-black/50 border border-white/20 rounded-xl p-4 text-white outline-none focus:border-purple-500 transition-colors"
                     />
                 </div>
 
-                <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Source</label>
+                <div className="flex gap-4">
+                    <button onClick={() => setSourceType('upload')} className={`flex-1 py-3 rounded-xl text-xs font-bold uppercase transition-all ${sourceType === 'upload' ? 'bg-purple-600 text-white shadow-lg' : 'bg-white/5 text-slate-400 hover:bg-white/10'}`}>本地上传 (R2)</button>
+                    <button onClick={() => setSourceType('link')} className={`flex-1 py-3 rounded-xl text-xs font-bold uppercase transition-all ${sourceType === 'link' ? 'bg-purple-600 text-white shadow-lg' : 'bg-white/5 text-slate-400 hover:bg-white/10'}`}>外部链接</button>
+                </div>
+            </div>
+
+            <div className="flex flex-col justify-end space-y-4">
+                 <div className="bg-black/30 border border-white/10 rounded-xl p-6 flex flex-col items-center justify-center min-h-[140px]">
                     {sourceType === 'upload' ? (
-                        <div className="relative group">
+                        <div className="w-full text-center">
                             <input 
                                 type="file" 
                                 ref={fileInputRef} 
                                 onChange={e => e.target.files && setFile(e.target.files[0])} 
-                                className="w-full bg-black border border-white/20 rounded-xl p-3 text-slate-400 file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:bg-white/10 file:text-white hover:file:bg-white/20 cursor-pointer"
+                                className="text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-purple-500/10 file:text-purple-500 hover:file:bg-purple-500/20"
                                 accept="image/*"
                             />
                         </div>
@@ -122,20 +112,17 @@ export const GalleryManager: React.FC<GalleryManagerProps> = ({ images, onUpdate
                             value={inputValue} 
                             onChange={e => setInputValue(e.target.value)} 
                             placeholder="https://example.com/image.jpg" 
-                            className="w-full bg-black border border-white/20 rounded-xl p-4 text-white outline-none focus:border-purple-500 font-mono text-sm"
+                            className="w-full bg-transparent text-center text-white outline-none font-mono text-sm placeholder-slate-600"
                         />
                     )}
                 </div>
-            </div>
 
-            <div className="flex justify-end pt-4">
                 <button 
                     onClick={handlePublish} 
                     disabled={isUploading} 
-                    className="px-8 py-3 bg-white text-black font-bold rounded-xl hover:bg-purple-400 transition-colors disabled:opacity-50 flex items-center gap-2"
+                    className="w-full py-4 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl transition-all uppercase tracking-widest text-sm disabled:opacity-50"
                 >
-                    {isUploading ? <span className="animate-spin">◐</span> : <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>}
-                    {isUploading ? 'Uploading...' : '发布到画廊'}
+                    {isUploading ? '正在上传...' : '发布到画廊'}
                 </button>
             </div>
         </div>
@@ -144,15 +131,15 @@ export const GalleryManager: React.FC<GalleryManagerProps> = ({ images, onUpdate
       {/* Grid List */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
         {images.map(img => (
-          <div key={img.id} className="group relative aspect-square bg-[#111] rounded-xl overflow-hidden border border-white/5 hover:border-purple-500/50 transition-colors">
+          <div key={img.id} className="group relative aspect-square bg-[#111] rounded-xl overflow-hidden border border-white/5 hover:border-purple-500/50 transition-all hover:scale-[1.02]">
             <img src={img.url} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
             <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3 p-4">
               <span className="text-xs text-white font-bold text-center line-clamp-2">{img.title}</span>
-              <button onClick={() => handleDelete(img.id)} className="px-4 py-1.5 bg-red-500/20 text-red-400 border border-red-500/50 text-xs rounded-full hover:bg-red-500 hover:text-white transition-all">
+              <button onClick={() => handleDelete(img.id)} className="px-4 py-1.5 bg-red-500/20 text-red-400 border border-red-500/50 text-[10px] uppercase rounded-full hover:bg-red-500 hover:text-white transition-all">
                 Delete
               </button>
             </div>
-            <div className="absolute top-2 right-2 bg-black/60 backdrop-blur rounded px-2 py-0.5 text-[10px] text-slate-300 font-mono">
+            <div className="absolute top-2 right-2 bg-black/60 backdrop-blur rounded px-2 py-0.5 text-[9px] text-slate-300 font-mono">
                 {new Date(img.uploadedAt).toLocaleDateString()}
             </div>
           </div>
