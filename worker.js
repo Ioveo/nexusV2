@@ -12,6 +12,20 @@ const corsHeaders = {
   'Access-Control-Expose-Headers': 'Content-Length, Content-Range, Accept-Ranges, ETag',
 };
 
+// Helper to guess mime type if R2 metadata is generic
+const getMimeType = (key, currentType) => {
+    if (currentType && currentType !== 'application/octet-stream') return currentType;
+    const lower = key.toLowerCase();
+    if (lower.endsWith('.mp3')) return 'audio/mpeg';
+    if (lower.endsWith('.wav')) return 'audio/wav';
+    if (lower.endsWith('.flac')) return 'audio/flac';
+    if (lower.endsWith('.mp4')) return 'video/mp4';
+    if (lower.endsWith('.webm')) return 'video/webm';
+    if (lower.endsWith('.png')) return 'image/png';
+    if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
+    return currentType || 'application/octet-stream';
+};
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -231,9 +245,9 @@ export default {
           const rangeHeader = request.headers.get('range');
           
           // Use R2's native range handling to get the chunk
+          // Removed 'onlyIf' which can cause issues if ETags mismatch during streaming
           const object = await env.SONIC_BUCKET.get(key, {
               range: rangeHeader ? request.headers : undefined,
-              onlyIf: rangeHeader ? request.headers : undefined,
           });
 
           if (!object) {
@@ -241,10 +255,13 @@ export default {
           }
 
           const headers = new Headers();
-          // Copy metadata (Content-Type)
-          object.writeHttpMetadata(headers);
           
-          headers.set('etag', object.httpEtag);
+          // Correct MIME type if needed (Audio/Video fix)
+          const storedType = object.httpMetadata?.contentType;
+          const correctType = getMimeType(key, storedType);
+          headers.set('Content-Type', correctType);
+          
+          if (object.httpEtag) headers.set('etag', object.httpEtag);
           headers.set('Accept-Ranges', 'bytes'); 
           
           // CORS
