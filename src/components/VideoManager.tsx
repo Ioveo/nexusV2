@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Video, Category } from '../types';
 import { storageService } from '../services/storageService';
+import { FileSelectorModal } from './Common';
 
 interface VideoManagerProps {
   videos: Video[];
@@ -27,6 +28,7 @@ export const VideoManager: React.FC<VideoManagerProps> = ({ videos, categories, 
   
   const [uploadProgress, setUploadProgress] = useState(0);
   const [r2Status, setR2Status] = useState<{ok: boolean, msg: string} | null>(null);
+  const [showFileSelector, setShowFileSelector] = useState(false); // New state
 
   const coverInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
@@ -71,23 +73,30 @@ export const VideoManager: React.FC<VideoManagerProps> = ({ videos, categories, 
           let finalVideoUrl = state.videoUrl;
           
           if (state.sourceType === 'local') {
+              // Only upload if a NEW file is selected via input, otherwise keep existing URL
               if (videoInputRef.current?.files?.[0]) {
                   finalVideoUrl = await storageService.uploadFile(
                       videoInputRef.current.files[0], 
                       (pct) => setUploadProgress(pct)
                   );
               } else if (!state.videoUrl && mode === 'create') {
-                  throw new Error("请选择视频文件");
+                  throw new Error("请选择视频文件 (上传或从库中选择)");
               }
           } else {
               if (!state.videoUrl) throw new Error("请输入视频链接");
+          }
+
+          // Auto-fill Cover if empty
+          let finalCover = state.cover;
+          if (!finalCover) {
+              finalCover = getRandomCover();
           }
 
           const videoData: Video = {
               id: mode === 'edit' && editingId ? editingId : Date.now().toString(),
               title: state.title,
               author: state.author || "Unknown",
-              coverUrl: state.cover || getRandomCover(),
+              coverUrl: finalCover,
               videoUrl: finalVideoUrl,
               sourceType: state.sourceType,
               category: videoCats.find(c => c.id === state.categoryId)?.name || 'General',
@@ -118,7 +127,7 @@ export const VideoManager: React.FC<VideoManagerProps> = ({ videos, categories, 
 
           onUpdate(updatedVideos);
           await storageService.saveVideos(updatedVideos);
-          alert("保存成功");
+          alert("保存成功" + (!state.cover ? " (自动生成封面)" : ""));
           resetForm();
       } catch (e: any) {
           alert("操作失败: " + e.message);
@@ -143,6 +152,13 @@ export const VideoManager: React.FC<VideoManagerProps> = ({ videos, categories, 
 
   return (
     <div className="max-w-5xl space-y-8">
+      <FileSelectorModal 
+        isOpen={showFileSelector} 
+        onClose={() => setShowFileSelector(false)} 
+        filter="video"
+        onSelect={(url) => setState(prev => ({...prev, videoUrl: url, sourceType: 'local'}))}
+      />
+
       <div className="flex justify-between items-center">
           <div className="flex items-center gap-4">
               <h3 className="text-2xl font-bold">视频管理 ({videos.length})</h3>
@@ -180,14 +196,27 @@ export const VideoManager: React.FC<VideoManagerProps> = ({ videos, categories, 
           <textarea placeholder="视频简介..." value={state.description} onChange={e => setState({...state, description: e.target.value})} className="w-full bg-black border border-white/20 p-3 rounded text-white h-20 resize-none"/>
           
           <div className="flex gap-4">
-             <button onClick={() => setState({...state, sourceType: 'local'})} className={`flex-1 py-2 rounded text-sm border ${state.sourceType === 'local' ? 'bg-white text-black' : 'border-white/10'}`}>本地上传</button>
+             <button onClick={() => setState({...state, sourceType: 'local'})} className={`flex-1 py-2 rounded text-sm border ${state.sourceType === 'local' ? 'bg-white text-black' : 'border-white/10'}`}>本地资源 (上传/库)</button>
              <button onClick={() => setState({...state, sourceType: 'external'})} className={`flex-1 py-2 rounded text-sm border ${state.sourceType === 'external' ? 'bg-white text-black' : 'border-white/10'}`}>外部链接</button>
           </div>
           
           {state.sourceType === 'local' ? (
-              <div className="space-y-2">
-                  <input type="file" ref={videoInputRef} accept="video/*" className="w-full text-slate-400 text-sm"/>
-                  <p className="text-[10px] text-slate-500">支持超大文件分片上传 (无 100MB 限制)</p>
+              <div className="space-y-2 p-3 bg-black rounded border border-white/10">
+                  <div className="flex gap-3">
+                      <div className="flex-1">
+                          <p className="text-[10px] text-slate-500 mb-1 uppercase font-bold">选项 A: 上传新文件</p>
+                          <input type="file" ref={videoInputRef} accept="video/*" className="w-full text-slate-400 text-sm"/>
+                      </div>
+                      <div className="w-px bg-white/10"></div>
+                      <div className="flex-1 flex flex-col justify-end">
+                          <p className="text-[10px] text-slate-500 mb-1 uppercase font-bold">选项 B: 选择已有文件</p>
+                          <button onClick={() => setShowFileSelector(true)} className="w-full py-1.5 bg-white/10 hover:bg-white/20 rounded text-sm text-white">从媒体库选择</button>
+                      </div>
+                  </div>
+                  {state.videoUrl && !videoInputRef.current?.value && (
+                      <p className="text-xs text-orange-400 mt-2">已选择: {state.videoUrl}</p>
+                  )}
+                  <p className="text-[10px] text-slate-500 pt-1">支持超大文件分片上传</p>
               </div>
           ) : (
               <input type="text" placeholder="MP4 URL..." value={state.videoUrl} onChange={e => setState({...state, videoUrl: e.target.value})} className="w-full bg-black border border-white/20 p-3 rounded text-white font-mono text-sm"/>
@@ -199,7 +228,7 @@ export const VideoManager: React.FC<VideoManagerProps> = ({ videos, categories, 
                         <img src={state.cover} className="w-16 h-9 rounded object-cover" />
                         <span className="text-orange-500 text-xs">封面已就绪</span>
                     </div>
-                ) : <span className="text-xs text-slate-500">上传封面图 (推荐 16:9)</span>}
+                ) : <span className="text-xs text-slate-500">上传封面图 (留空将自动随机生成)</span>}
                 <input type="file" ref={coverInputRef} onChange={async (e) => {
                     if(e.target.files?.[0]) {
                         try {
