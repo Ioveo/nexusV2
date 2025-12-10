@@ -1,3 +1,4 @@
+
 // src/components/MusicShowcase.tsx
 
 import React, { useState, useRef } from 'react';
@@ -99,42 +100,161 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
         if (track.sourceType === 'netease') return `https://music.163.com/song/media/outer/url?id=${track.src}.mp3`;
         return track.src;
     };
-    
-    // --- LAYOUT WRAPPER ---
-    const MainLayout = ({ children, transparent = false }: { children: React.ReactNode, transparent?: boolean }) => (
-        <div className={`min-h-screen bg-[#050505] text-white ${transparent ? '' : 'pb-32'}`}>
-            <Navbar onNavigate={props.onNavigate} onAdmin={handleAdminClick} onSettings={props.onOpenSettings} currentView={props.currentView} transparent={transparent} />
+
+    // --- RENDER CONTENT HELPERS ---
+
+    const renderAdminPanel = () => (
+         <div className="min-h-screen bg-[#020617] text-white pt-24 px-4 md:px-8">
+            <div className="max-w-7xl mx-auto">
+                <div className="flex justify-between items-center mb-8 pb-6 border-b border-white/10">
+                    <h1 className="text-3xl font-display font-bold">SYSTEM CORE <span className="text-acid text-sm ml-2">CMS</span></h1>
+                    <button onClick={() => setAdminMode(false)} className="px-4 py-2 border border-white/20 text-xs">退出系统</button>
+                </div>
+                <div className="flex gap-2 mb-6 overflow-x-auto no-scrollbar">
+                    {['music','video','article','gallery','category'].map(tab => (
+                        <button key={tab} onClick={() => setActiveTab(tab)} className={`px-6 py-2 text-xs font-bold uppercase border ${activeTab === tab ? 'bg-acid text-black border-acid' : 'border-white/10'}`}>{tab}</button>
+                    ))}
+                </div>
+                <div className="bg-[#0f172a]/50 border border-white/5 p-6 rounded-xl min-h-[500px]">
+                    {activeTab === 'music' && <MusicManager tracks={props.tracks} onAdd={t => props.onUpdateTracks([t, ...props.tracks])} onDelete={id => props.onUpdateTracks(props.tracks.filter(t => t.id !== id))} onUpdate={props.onUpdateTracks}/>}
+                    {activeTab === 'video' && <VideoManager videos={props.videos} categories={props.categories} onUpdate={props.onUpdateVideos} />}
+                    {activeTab === 'article' && <ArticleManager articles={props.articles} tracks={props.tracks} onAdd={a => props.onUpdateArticles([a, ...props.articles])} onDelete={id => props.onUpdateArticles(props.articles.filter(a => a.id !== id))} />}
+                    {activeTab === 'gallery' && <GalleryManager images={props.gallery} onUpdate={props.onUpdateGallery} />}
+                    {activeTab === 'category' && <CategoryManager categories={props.categories} onUpdate={props.onUpdateCategories} />}
+                </div>
+            </div>
+        </div>
+    );
+
+    const renderHomeView = () => (
+        <div className="relative z-10 pt-24 pb-12 px-4 md:px-8 max-w-[1800px] mx-auto">
+            {/* BENTO HERO */}
+            <div className="grid grid-cols-1 md:grid-cols-12 md:grid-rows-2 gap-4 h-auto md:h-[600px] mb-24">
+                <BentoCard className="md:col-span-8 md:row-span-2 flex flex-col justify-between bg-[url('https://grainy-gradients.vercel.app/noise.svg')]">
+                    <div className="relative z-10">
+                        <div className="flex items-center gap-2 mb-4">
+                            <div className="w-2 h-2 bg-acid animate-pulse"></div>
+                            <span className="text-xs font-mono text-acid uppercase tracking-widest">System Online</span>
+                        </div>
+                        <h1 className="text-[15vw] md:text-[9rem] font-display font-black leading-[0.8] tracking-tighter text-white mix-blend-difference">NEXUS</h1>
+                    </div>
+                    <div className="relative z-10 flex flex-col md:flex-row justify-between items-end gap-6">
+                        <p className="text-xl md:text-2xl text-slate-300 font-light max-w-lg">连接 <span className="text-acid font-bold">听觉</span> 与 <span className="text-neon font-bold">视觉</span> 的下一代智能终端。</p>
+                        <button onClick={() => props.onNavigate('music')} className="px-8 py-4 bg-white text-black font-bold uppercase tracking-widest hover:bg-acid transition-all">探索媒体库 &rarr;</button>
+                    </div>
+                </BentoCard>
+                <BentoCard className="md:col-span-4 md:row-span-1 flex flex-col justify-between">
+                        <div className="text-5xl font-display font-bold text-white tracking-tighter">{new Date().getHours().toString().padStart(2,'0')}:{new Date().getMinutes().toString().padStart(2,'0')}</div>
+                        <div className="text-xs font-mono text-slate-400 uppercase">Secure Connection</div>
+                </BentoCard>
+                <BentoCard onClick={() => fileInputRef.current?.click()} className="md:col-span-2 md:row-span-1 flex flex-col items-center justify-center text-center gap-4 hover:bg-white/5 cursor-pointer">
+                        <div className="w-12 h-12 rounded-full border border-white/20 flex items-center justify-center group-hover:border-acid">⚡</div>
+                        <span className="text-xs font-bold uppercase tracking-widest text-slate-300">音频分析</span>
+                        <input type="file" ref={fileInputRef} onChange={(e) => e.target.files && props.onAnalyze(e.target.files[0])} className="hidden" accept="audio/*" />
+                </BentoCard>
+                <BentoCard className="md:col-span-2 md:row-span-1 relative flex items-center bg-acid/5 border-acid/20">
+                        <div className="w-full text-center"><span className="text-4xl font-black text-acid">V5</span></div>
+                </BentoCard>
+            </div>
+
+            <div className="space-y-32">
+                <section>
+                    <Marquee text="CINEMA EXPERIENCE" opacity={0.05} />
+                    <div className="relative z-10 -mt-20">
+                        <SectionHeader title="影视中心" sub="影视数据库 / Cinema DB" color="orange" onMore={() => props.onNavigate('video')} />
+                        <div className="hidden lg:block"><VideoGrid videos={props.videos} onPauseMusic={handlePauseMusic} /></div>
+                        <div className="lg:hidden text-center text-slate-500 text-xs">请在桌面端获得最佳观影体验</div>
+                    </div>
+                </section>
+                <section>
+                    <SectionHeader title="精选音乐" sub="精选歌单 / Featured Tracks" color="acid" onMore={() => props.onNavigate('music')} />
+                    <MusicGrid tracks={props.tracks} onPlay={handlePlay} playingId={playingId} />
+                </section>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
+                    <section>
+                        <SectionHeader title="深度专栏" sub="深度编辑 / Editorial Hub" color="cyber" onMore={() => props.onNavigate('article')} />
+                        <ArticleGrid articles={props.articles.slice(0, 2)} onRead={setReadingArticle} />
+                    </section>
+                    <section>
+                        <SectionHeader title="视觉画廊" sub="艺术画廊 / Visual Arts" color="neon" onMore={() => props.onNavigate('gallery')} />
+                        <GalleryGrid images={props.gallery.slice(0, 6)} />
+                    </section>
+                </div>
+            </div>
+            
+             <footer className="mt-32 border-t border-white/10 bg-[#020202] py-12 text-center text-xs text-slate-500 font-mono">
+                NEXUS AUDIO LAB © 2024 SYSTEM CORE
+            </footer>
+        </div>
+    );
+
+    // Determines what main content to render based on `currentView`
+    const renderContent = () => {
+        if (adminMode) return renderAdminPanel();
+        if (readingArticle) return null; // ArticleView overlays everything, handled below in root return
+
+        switch(props.currentView) {
+            case 'home': 
+                return renderHomeView();
+            case 'video':
+                // Video Grid (Transparent BG implied by not having bg-color on wrapper in VideoGrid)
+                return <VideoGrid videos={props.videos} onPauseMusic={handlePauseMusic} />;
+            case 'music':
+                return (
+                    <div className="pt-24 md:pt-0"> {/* Special padding for Music view if needed, but MusicGrid handles hero */}
+                        <MusicGrid tracks={props.tracks} onPlay={handlePlay} playingId={playingId} />
+                    </div>
+                );
+            case 'article':
+                return (
+                    <div className="pt-24 px-4 md:px-8 max-w-[1600px] mx-auto">
+                        <SectionHeader title="深度专栏" sub="Editorial_Hub" color="cyber" />
+                        <ArticleGrid articles={props.articles} onRead={setReadingArticle} />
+                    </div>
+                );
+            case 'gallery':
+                return (
+                    <div className="pt-24 px-4 md:px-8 max-w-[1600px] mx-auto">
+                        <SectionHeader title="视觉画廊" sub="Visual_Arts" color="neon" />
+                        <GalleryGrid images={props.gallery} />
+                    </div>
+                );
+            default: return null;
+        }
+    };
+
+    // --- ROOT RENDER ---
+    return (
+        <div className={`min-h-screen bg-[#050505] text-white ${adminMode ? '' : 'pb-32'}`}>
             <AdminLoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} onLogin={handleLoginSubmit} />
             
-            {children}
-
-            {/* Global Audio Elements */}
-            <GlobalPlayer 
-                track={currentTrack} 
-                playingId={playingId} 
-                currentTime={currentTime} 
-                duration={duration} 
-                onTogglePlay={() => { if(audioRef.current?.paused) audioRef.current.play(); else audioRef.current?.pause(); setPlayingId(null); }}
-                onSeek={handleSeek}
-                onToggleLyrics={() => setShowLyrics(!showLyrics)}
-                showLyrics={showLyrics}
-                onClose={(e) => { e.stopPropagation(); setPlayingId(null); }}
-            />
-            
-            <SonicMascot isPlaying={!!playingId} sourceType={currentTrack?.sourceType || null} />
-            
-            {showLyrics && currentTrack && (
-                <LyricsView 
-                    title={currentTrack.title} 
-                    artist={currentTrack.artist} 
-                    coverUrl={currentTrack.coverUrl} 
-                    lyrics={currentTrack.lyrics}
-                    currentTime={currentTime}
-                    onSeek={(t) => { if (audioRef.current) audioRef.current.currentTime = t; }}
-                    onClose={() => setShowLyrics(false)}
+            {/* Navbar - Hide in Admin, or if reading article */}
+            {!adminMode && !readingArticle && (
+                <Navbar 
+                    onNavigate={props.onNavigate} 
+                    onAdmin={handleAdminClick} 
+                    onSettings={props.onOpenSettings} 
+                    currentView={props.currentView} 
+                    transparent={props.currentView === 'video' || props.currentView === 'music'} 
                 />
             )}
 
+            {/* Main Content Area */}
+            {renderContent()}
+
+            {/* Article Overlay */}
+            {readingArticle && (
+                <ArticleView 
+                    article={readingArticle} 
+                    relatedTrack={props.tracks.find(t => t.id === readingArticle.trackId)} 
+                    isPlaying={playingId === readingArticle.trackId}
+                    onTogglePlay={() => handlePlay(readingArticle.trackId || null)}
+                    onBack={() => setReadingArticle(null)}
+                />
+            )}
+
+            {/* GLOBAL AUDIO - PERSISTENT IN DOM */}
+            {/* This ensures audio doesn't restart when React re-renders layout components */}
             {currentTrack && (
                 <audio 
                     ref={audioRef} 
@@ -151,136 +271,37 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
                     className="hidden"
                 />
             )}
+
+            {/* Global Players */}
+            {!adminMode && (
+                <>
+                    <GlobalPlayer 
+                        track={currentTrack} 
+                        playingId={playingId} 
+                        currentTime={currentTime} 
+                        duration={duration} 
+                        onTogglePlay={() => { if(audioRef.current?.paused) audioRef.current.play(); else audioRef.current?.pause(); setPlayingId(null); }}
+                        onSeek={handleSeek}
+                        onToggleLyrics={() => setShowLyrics(!showLyrics)}
+                        showLyrics={showLyrics}
+                        onClose={(e) => { e.stopPropagation(); setPlayingId(null); }}
+                    />
+                    
+                    <SonicMascot isPlaying={!!playingId} sourceType={currentTrack?.sourceType || null} />
+                    
+                    {showLyrics && currentTrack && (
+                        <LyricsView 
+                            title={currentTrack.title} 
+                            artist={currentTrack.artist} 
+                            coverUrl={currentTrack.coverUrl} 
+                            lyrics={currentTrack.lyrics}
+                            currentTime={currentTime}
+                            onSeek={(t) => { if (audioRef.current) audioRef.current.currentTime = t; }}
+                            onClose={() => setShowLyrics(false)}
+                        />
+                    )}
+                </>
+            )}
         </div>
     );
-
-    // --- VIEW ROUTING ---
-
-    if (readingArticle) {
-        return (
-            <ArticleView 
-                article={readingArticle} 
-                relatedTrack={props.tracks.find(t => t.id === readingArticle.trackId)} 
-                isPlaying={playingId === readingArticle.trackId}
-                onTogglePlay={() => handlePlay(readingArticle.trackId || null)}
-                onBack={() => setReadingArticle(null)}
-            />
-        );
-    }
-
-    if (adminMode) {
-        // CMS View
-        return (
-             <div className="min-h-screen bg-[#020617] text-white pt-24 px-4 md:px-8">
-                <div className="max-w-7xl mx-auto">
-                    <div className="flex justify-between items-center mb-8 pb-6 border-b border-white/10">
-                        <h1 className="text-3xl font-display font-bold">SYSTEM CORE <span className="text-acid text-sm ml-2">CMS</span></h1>
-                        <button onClick={() => setAdminMode(false)} className="px-4 py-2 border border-white/20 text-xs">EXIT</button>
-                    </div>
-                    <div className="flex gap-2 mb-6 overflow-x-auto no-scrollbar">
-                        {['music','video','article','gallery','category'].map(tab => (
-                            <button key={tab} onClick={() => setActiveTab(tab)} className={`px-6 py-2 text-xs font-bold uppercase border ${activeTab === tab ? 'bg-acid text-black border-acid' : 'border-white/10'}`}>{tab}</button>
-                        ))}
-                    </div>
-                    <div className="bg-[#0f172a]/50 border border-white/5 p-6 rounded-xl min-h-[500px]">
-                        {activeTab === 'music' && <MusicManager tracks={props.tracks} onAdd={t => props.onUpdateTracks([t, ...props.tracks])} onDelete={id => props.onUpdateTracks(props.tracks.filter(t => t.id !== id))} onUpdate={props.onUpdateTracks}/>}
-                        {activeTab === 'video' && <VideoManager videos={props.videos} categories={props.categories} onUpdate={props.onUpdateVideos} />}
-                        {activeTab === 'article' && <ArticleManager articles={props.articles} tracks={props.tracks} onAdd={a => props.onUpdateArticles([a, ...props.articles])} onDelete={id => props.onUpdateArticles(props.articles.filter(a => a.id !== id))} />}
-                        {activeTab === 'gallery' && <GalleryManager images={props.gallery} onUpdate={props.onUpdateGallery} />}
-                        {activeTab === 'category' && <CategoryManager categories={props.categories} onUpdate={props.onUpdateCategories} />}
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    if (props.currentView === 'video') {
-        return (
-            <MainLayout transparent={true}>
-                <VideoGrid videos={props.videos} onPauseMusic={handlePauseMusic} />
-            </MainLayout>
-        );
-    }
-
-    if (props.currentView === 'home') {
-        return (
-            <MainLayout>
-                <div className="relative z-10 pt-24 pb-12 px-4 md:px-8 max-w-[1800px] mx-auto">
-                    {/* BENTO HERO */}
-                    <div className="grid grid-cols-1 md:grid-cols-12 md:grid-rows-2 gap-4 h-auto md:h-[600px] mb-24">
-                        <BentoCard className="md:col-span-8 md:row-span-2 flex flex-col justify-between bg-[url('https://grainy-gradients.vercel.app/noise.svg')]">
-                            <div className="relative z-10">
-                                <div className="flex items-center gap-2 mb-4">
-                                    <div className="w-2 h-2 bg-acid animate-pulse"></div>
-                                    <span className="text-xs font-mono text-acid uppercase tracking-widest">System Online</span>
-                                </div>
-                                <h1 className="text-[15vw] md:text-[9rem] font-display font-black leading-[0.8] tracking-tighter text-white mix-blend-difference">NEXUS</h1>
-                            </div>
-                            <div className="relative z-10 flex flex-col md:flex-row justify-between items-end gap-6">
-                                <p className="text-xl md:text-2xl text-slate-300 font-light max-w-lg">连接 <span className="text-acid font-bold">听觉</span> 与 <span className="text-neon font-bold">视觉</span> 的下一代智能终端。</p>
-                                <button onClick={() => props.onNavigate('music')} className="px-8 py-4 bg-white text-black font-bold uppercase tracking-widest hover:bg-acid transition-all">探索媒体库 &rarr;</button>
-                            </div>
-                        </BentoCard>
-                        <BentoCard className="md:col-span-4 md:row-span-1 flex flex-col justify-between">
-                             <div className="text-5xl font-display font-bold text-white tracking-tighter">{new Date().getHours().toString().padStart(2,'0')}:{new Date().getMinutes().toString().padStart(2,'0')}</div>
-                             <div className="text-xs font-mono text-slate-400 uppercase">Secure Connection</div>
-                        </BentoCard>
-                        <BentoCard onClick={() => fileInputRef.current?.click()} className="md:col-span-2 md:row-span-1 flex flex-col items-center justify-center text-center gap-4 hover:bg-white/5 cursor-pointer">
-                             <div className="w-12 h-12 rounded-full border border-white/20 flex items-center justify-center group-hover:border-acid">⚡</div>
-                             <span className="text-xs font-bold uppercase tracking-widest text-slate-300">音频分析</span>
-                             <input type="file" ref={fileInputRef} onChange={(e) => e.target.files && props.onAnalyze(e.target.files[0])} className="hidden" accept="audio/*" />
-                        </BentoCard>
-                        <BentoCard className="md:col-span-2 md:row-span-1 relative flex items-center bg-acid/5 border-acid/20">
-                             <div className="w-full text-center"><span className="text-4xl font-black text-acid">V5</span></div>
-                        </BentoCard>
-                    </div>
-
-                    <div className="space-y-32">
-                        <section>
-                            <Marquee text="CINEMA EXPERIENCE" opacity={0.05} />
-                            <div className="relative z-10 -mt-20">
-                                <SectionHeader title="影视中心" sub="Cinema_Database" color="orange" onMore={() => props.onNavigate('video')} />
-                                <div className="hidden lg:block"><VideoGrid videos={props.videos} onPauseMusic={handlePauseMusic} /></div>
-                                <div className="lg:hidden text-center text-slate-500 text-xs">Please view on desktop</div>
-                            </div>
-                        </section>
-                        <section>
-                            <SectionHeader title="精选音乐" sub="Featured_Tracks" color="acid" onMore={() => props.onNavigate('music')} />
-                            <MusicGrid tracks={props.tracks} onPlay={handlePlay} playingId={playingId} />
-                        </section>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
-                            <section>
-                                <SectionHeader title="深度专栏" sub="Editorial_Hub" color="cyber" onMore={() => props.onNavigate('article')} />
-                                <ArticleGrid articles={props.articles.slice(0, 2)} onRead={setReadingArticle} />
-                            </section>
-                            <section>
-                                <SectionHeader title="视觉画廊" sub="Gallery_Arts" color="neon" onMore={() => props.onNavigate('gallery')} />
-                                <GalleryGrid images={props.gallery.slice(0, 6)} />
-                            </section>
-                        </div>
-                    </div>
-                </div>
-                
-                <footer className="mt-32 border-t border-white/10 bg-[#020202] py-12 text-center text-xs text-slate-500 font-mono">
-                    NEXUS AUDIO LAB © 2024 SYSTEM CORE
-                </footer>
-            </MainLayout>
-        );
-    }
-
-    // Default Page Wrapper
-    const SimpleLayout = ({ children, title, subtitle, color, noPadding = false }: any) => (
-        <MainLayout transparent={true}>
-            <div className={`mx-auto ${noPadding ? '' : 'pt-24 px-4 md:px-8 max-w-[1600px]'}`}>
-                {children}
-            </div>
-        </MainLayout>
-    );
-
-    // Using SimpleLayout with noPadding for MusicGrid to allow full bleed hero
-    if (props.currentView === 'music') return <SimpleLayout title="精选音乐" subtitle="// Sonic_Archive" color="acid" noPadding={true}><MusicGrid tracks={props.tracks} onPlay={handlePlay} playingId={playingId} /></SimpleLayout>;
-    if (props.currentView === 'article') return <SimpleLayout title="深度专栏" subtitle="// Editorial_Hub" color="cyber"><ArticleGrid articles={props.articles} onRead={setReadingArticle} /></SimpleLayout>;
-    if (props.currentView === 'gallery') return <SimpleLayout title="视觉画廊" subtitle="// Visual_Arts" color="neon"><GalleryGrid images={props.gallery} /></SimpleLayout>;
-
-    return null;
 };
