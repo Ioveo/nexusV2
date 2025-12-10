@@ -3,6 +3,7 @@
 import React, { useState, useRef } from 'react';
 import { Article, GalleryTrack } from '../types';
 import { storageService } from '../services/storageService';
+import { FileSelectorModal } from './Common';
 
 interface ArticleManagerProps {
   articles: Article[];
@@ -24,6 +25,8 @@ export const ArticleManager: React.FC<ArticleManagerProps> = ({ articles, tracks
   const [state, setState] = useState({
       title: '', subtitle: '', author: 'NEXUS Editor', content: '', trackId: '', cover: '', isUploading: false
   });
+  const [showFileSelector, setShowFileSelector] = useState<{show: boolean, type: 'cover' | 'content'}>({ show: false, type: 'cover' });
+
   const articleCoverRef = useRef<HTMLInputElement>(null);
   const contentImageRef = useRef<HTMLInputElement>(null);
   const contentTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -121,6 +124,19 @@ export const ArticleManager: React.FC<ArticleManagerProps> = ({ articles, tracks
 
   return (
     <div className="max-w-5xl space-y-8">
+        <FileSelectorModal 
+            isOpen={showFileSelector.show} 
+            onClose={() => setShowFileSelector({ show: false, type: 'cover' })} 
+            filter="image"
+            onSelect={(url) => {
+                if (showFileSelector.type === 'cover') {
+                    setState(p => ({ ...p, cover: url }));
+                } else {
+                    insertAtCursor(`\n![Image](${url})\n`);
+                }
+            }}
+        />
+
         <div className="flex justify-between items-center">
             <h3 className="text-2xl font-bold hidden md:block">撰写深度专栏</h3>
             {mode === 'edit' && (
@@ -142,14 +158,19 @@ export const ArticleManager: React.FC<ArticleManagerProps> = ({ articles, tracks
                 </select>
             </div>
 
-            <div className="p-4 border border-dashed border-white/20 rounded-xl cursor-pointer hover:border-cyan-500 transition-colors" onClick={() => articleCoverRef.current?.click()}>
-                {state.cover ? (
-                    <div className="relative">
-                        <img src={state.cover} className="h-48 w-full object-cover rounded" />
-                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity text-xs">点击更换封面</div>
-                    </div>
-                ) : <span className="text-slate-500 text-sm flex items-center justify-center h-20">上传文章封面图 (如未上传将自动随机生成)</span>}
-                <input type="file" ref={articleCoverRef} onChange={handleArticleCoverUpload} className="hidden" accept="image/*"/>
+            <div className="flex gap-4 items-center">
+                 <div className="flex-1 p-4 border border-dashed border-white/20 rounded-xl cursor-pointer hover:border-cyan-500 transition-colors relative group" onClick={() => articleCoverRef.current?.click()}>
+                    {state.cover ? (
+                        <div className="relative h-48 w-full">
+                            <img src={state.cover} className="h-full w-full object-cover rounded" />
+                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs">点击更换封面</div>
+                        </div>
+                    ) : <span className="text-slate-500 text-sm flex items-center justify-center h-20">上传文章封面图</span>}
+                    <input type="file" ref={articleCoverRef} onChange={handleArticleCoverUpload} className="hidden" accept="image/*"/>
+                </div>
+                <button onClick={() => setShowFileSelector({ show: true, type: 'cover' })} className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs font-bold text-slate-300 whitespace-nowrap h-fit">
+                    从媒体库选择封面
+                </button>
             </div>
 
             {/* Rich Text Toolbar */}
@@ -159,9 +180,14 @@ export const ArticleManager: React.FC<ArticleManagerProps> = ({ articles, tracks
                 <button onClick={() => insertAtCursor('**', '**')} className="px-3 py-1 bg-white/5 hover:bg-white/10 rounded text-xs font-bold shrink-0" title="加粗">B</button>
                 <button onClick={() => insertAtCursor('*', '*')} className="px-3 py-1 bg-white/5 hover:bg-white/10 rounded text-xs font-bold shrink-0" title="斜体">I</button>
                 <div className="w-px h-4 bg-white/10 mx-1 shrink-0"></div>
+                
                 <button onClick={() => contentImageRef.current?.click()} className="px-3 py-1 bg-cyan-900/30 text-cyan-400 hover:bg-cyan-900/50 rounded text-xs font-bold flex items-center gap-1 shrink-0" title="上传插图">
-                    插入图片
+                    插入图片 (Upload)
                 </button>
+                <button onClick={() => setShowFileSelector({ show: true, type: 'content' })} className="px-3 py-1 bg-cyan-900/30 text-cyan-400 hover:bg-cyan-900/50 rounded text-xs font-bold flex items-center gap-1 shrink-0" title="媒体库图片">
+                    图库选择 (Library)
+                </button>
+
                 <input type="file" ref={contentImageRef} onChange={handleContentImageUpload} className="hidden" accept="image/*"/>
             </div>
 
