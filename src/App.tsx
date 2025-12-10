@@ -1,3 +1,4 @@
+
 // src/App.tsx
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -8,7 +9,7 @@ import { AnalysisDisplay } from './components/AnalysisDisplay';
 import { SunoBuilder } from './components/SunoBuilder';
 import { CustomGenerator } from './components/CustomGenerator';
 import { MusicShowcase } from './components/MusicShowcase';
-import { SettingsModal } from './components/SettingsModal';
+import SettingsModal from './components/SettingsModal';
 
 // ... (PRESET DATA kept as is) ...
 const PRESET_TRACKS: GalleryTrack[] = [
