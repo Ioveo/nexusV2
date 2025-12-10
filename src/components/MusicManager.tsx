@@ -270,6 +270,7 @@ export const MusicManager: React.FC<MusicManagerProps> = ({ tracks, onAdd, onDel
                 ref={audioRef}
                 src={getAudioSrc(tracks.find(t => t.id === auditionId)!)}
                 autoPlay
+                crossOrigin="anonymous"
                 onEnded={() => setAuditionId(null)}
                 onError={() => setAuditionId(null)}
                 {...{ referrerPolicy: "no-referrer" } as any}
