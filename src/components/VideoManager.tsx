@@ -1,3 +1,4 @@
+
 // src/components/VideoManager.tsx
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -23,7 +24,17 @@ export const VideoManager: React.FC<VideoManagerProps> = ({ videos, categories, 
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const [state, setState] = useState({
-      title: '', author: '', videoUrl: '', sourceType: 'local' as 'local' | 'external', categoryId: '', cover: '', description: '', isHero: false, adSlogan: '', isUploading: false
+      title: '', 
+      author: '', 
+      videoUrl: '', 
+      sourceType: 'local' as 'local' | 'external', 
+      categoryId: '', 
+      cover: '', 
+      description: '', 
+      isHero: false,         // Global Home Hero
+      isVideoPageHero: false,// Video Page Hero
+      adSlogan: '', 
+      isUploading: false
   });
   
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -40,7 +51,11 @@ export const VideoManager: React.FC<VideoManagerProps> = ({ videos, categories, 
   }, []);
 
   const resetForm = () => {
-      setState({ title: '', author: '', videoUrl: '', sourceType: 'local', categoryId: '', cover: '', description: '', isHero: false, adSlogan: '', isUploading: false });
+      setState({ 
+          title: '', author: '', videoUrl: '', sourceType: 'local', categoryId: '', 
+          cover: '', description: '', isHero: false, isVideoPageHero: false,
+          adSlogan: '', isUploading: false 
+      });
       setMode('create');
       setEditingId(null);
       setUploadProgress(0);
@@ -56,6 +71,7 @@ export const VideoManager: React.FC<VideoManagerProps> = ({ videos, categories, 
           cover: video.coverUrl,
           description: video.description || '',
           isHero: !!video.isHero,
+          isVideoPageHero: !!video.isVideoPageHero,
           adSlogan: video.adSlogan || '',
           isUploading: false
       });
@@ -99,25 +115,28 @@ export const VideoManager: React.FC<VideoManagerProps> = ({ videos, categories, 
               addedAt: mode === 'edit' ? (videos.find(v => v.id === editingId)?.addedAt || Date.now()) : Date.now(),
               description: state.description,
               isHero: state.isHero,
+              isVideoPageHero: state.isVideoPageHero,
               adSlogan: state.adSlogan
           };
           
-          let updatedVideos: Video[] = [];
-          if (videoData.isHero) {
-              if (mode === 'edit') {
-                  updatedVideos = videos.map(v => {
-                      if (v.id === editingId) return videoData;
-                      return { ...v, isHero: false };
-                  });
-              } else {
-                  updatedVideos = [videoData, ...videos.map(v => ({ ...v, isHero: false }))];
-              }
+          let updatedVideos = [...videos];
+          
+          if (mode === 'edit') {
+              updatedVideos = updatedVideos.map(v => v.id === editingId ? videoData : v);
           } else {
-              if (mode === 'edit') {
-                  updatedVideos = videos.map(v => v.id === editingId ? videoData : v);
-              } else {
-                  updatedVideos = [videoData, ...videos];
-              }
+              updatedVideos = [videoData, ...updatedVideos];
+          }
+
+          // Enforce Single Hero Logic
+          if (videoData.isHero) {
+              updatedVideos = updatedVideos.map(v => 
+                  (v.id === videoData.id) ? v : { ...v, isHero: false }
+              );
+          }
+          if (videoData.isVideoPageHero) {
+              updatedVideos = updatedVideos.map(v => 
+                  (v.id === videoData.id) ? v : { ...v, isVideoPageHero: false }
+              );
           }
 
           onUpdate(updatedVideos);
@@ -137,12 +156,6 @@ export const VideoManager: React.FC<VideoManagerProps> = ({ videos, categories, 
       const updated = videos.filter(v => v.id !== id);
       onUpdate(updated);
       try { await storageService.saveVideos(updated); } catch(e) { console.error(e); }
-  };
-
-  const formatPathDisplay = (path: string) => {
-      if (!path) return '';
-      if (path.startsWith('/api/file/')) return '云端资源 (R2 Direct Link)';
-      return path;
   };
 
   return (
@@ -196,13 +209,24 @@ export const VideoManager: React.FC<VideoManagerProps> = ({ videos, categories, 
                        }} className="hidden"/>
                    </div>
 
-                   <label className="flex items-center gap-3 p-4 bg-white/5 border border-white/10 rounded-xl cursor-pointer hover:bg-orange-500/10 hover:border-orange-500/30 transition-all">
-                        <input type="checkbox" checked={state.isHero} onChange={e => setState({...state, isHero: e.target.checked})} className="accent-orange-500 w-4 h-4"/>
-                        <div className="flex flex-col">
-                            <span className="text-sm font-bold text-white">设为主推 (Hero)</span>
-                            <span className="text-[10px] text-slate-500">在首页顶部大屏展示</span>
-                        </div>
-                  </label>
+                   {/* DUAL HERO CONTROLS */}
+                   <div className="grid grid-cols-1 gap-3">
+                        <label className={`flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition-all ${state.isHero ? 'bg-orange-500/10 border-orange-500/50' : 'bg-white/5 border-white/10 hover:border-white/30'}`}>
+                                <input type="checkbox" checked={state.isHero} onChange={e => setState({...state, isHero: e.target.checked})} className="accent-orange-500 w-4 h-4"/>
+                                <div className="flex flex-col">
+                                    <span className={`text-sm font-bold ${state.isHero ? 'text-orange-400' : 'text-white'}`}>设为【全局首页】主推</span>
+                                    <span className="text-[10px] text-slate-500">Global Landing Page Hero</span>
+                                </div>
+                        </label>
+
+                        <label className={`flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition-all ${state.isVideoPageHero ? 'bg-cyan-500/10 border-cyan-500/50' : 'bg-white/5 border-white/10 hover:border-white/30'}`}>
+                                <input type="checkbox" checked={state.isVideoPageHero} onChange={e => setState({...state, isVideoPageHero: e.target.checked})} className="accent-cyan-500 w-4 h-4"/>
+                                <div className="flex flex-col">
+                                    <span className={`text-sm font-bold ${state.isVideoPageHero ? 'text-cyan-400' : 'text-white'}`}>设为【影视中心】主推</span>
+                                    <span className="text-[10px] text-slate-500">Video Hub Page Hero</span>
+                                </div>
+                        </label>
+                  </div>
               </div>
 
               {/* Right Column */}
@@ -262,12 +286,19 @@ export const VideoManager: React.FC<VideoManagerProps> = ({ videos, categories, 
               <div key={v.id} className="flex items-center gap-4 p-4 bg-[#111] rounded-xl border border-white/5 hover:border-orange-500/50 transition-colors group">
                   <div className="relative w-24 h-14 shrink-0 rounded overflow-hidden">
                       <img src={v.coverUrl} className="w-full h-full object-cover" />
-                      {v.isHero && <div className="absolute inset-0 border-2 border-orange-500"></div>}
+                      {/* STATUS BADGES */}
+                      <div className="absolute top-0 right-0 flex flex-col items-end p-1 gap-1">
+                        {v.isHero && <div className="w-2 h-2 rounded-full bg-orange-500 shadow-lg" title="Global Hero"></div>}
+                        {v.isVideoPageHero && <div className="w-2 h-2 rounded-full bg-cyan-500 shadow-lg" title="Video Page Hero"></div>}
+                      </div>
                   </div>
                   <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                           <h4 className="font-bold text-white truncate">{v.title}</h4>
-                          {v.isHero && <span className="text-[9px] bg-orange-500 text-black px-1.5 rounded font-black uppercase">HERO</span>}
+                          <div className="flex gap-1">
+                            {v.isHero && <span className="text-[9px] bg-orange-500 text-black px-1.5 rounded font-black uppercase">GLOBAL</span>}
+                            {v.isVideoPageHero && <span className="text-[9px] bg-cyan-500 text-black px-1.5 rounded font-black uppercase">CINEMA</span>}
+                          </div>
                       </div>
                       <div className="text-xs text-slate-500">{v.category} • {v.author}</div>
                   </div>
