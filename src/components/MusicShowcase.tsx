@@ -43,7 +43,7 @@ interface MusicShowcaseProps {
 export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
     const [adminMode, setAdminMode] = useState(false);
     const [showLoginModal, setShowLoginModal] = useState(false);
-    const [activeTab, setActiveTab] = useState('dashboard'); // Changed default to dashboard for admin
+    const [activeTab, setActiveTab] = useState('dashboard'); 
     const [playingId, setPlayingId] = useState<string|null>(null);
     const [readingArticle, setReadingArticle] = useState<Article | null>(null);
     const [showLyrics, setShowLyrics] = useState(false);
@@ -100,8 +100,7 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
         return track.src;
     };
 
-    // --- RENDER CONTENT HELPERS ---
-
+    // --- ADMIN PANEL ---
     const AdminSidebarItem = ({ id, label, icon }: { id: string, label: string, icon: React.ReactNode }) => (
         <button 
             onClick={() => setActiveTab(id)}
@@ -140,8 +139,6 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
             {/* Content Area */}
             <div className="flex-1 bg-[#050505] overflow-y-auto custom-scrollbar relative">
                 <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none"></div>
-                <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-lime-500/5 to-transparent pointer-events-none"></div>
-
                 <div className="relative z-10 p-8 md:p-12 max-w-[1600px] mx-auto">
                     {/* Header */}
                     <div className="mb-8 flex items-end justify-between">
@@ -149,37 +146,28 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
                              <h2 className="text-3xl font-bold text-white mb-2 uppercase">{activeTab.replace('_', ' ')}</h2>
                              <p className="text-slate-500 text-sm font-mono">Administration Module Active</p>
                          </div>
-                         <div className="flex items-center gap-2 px-3 py-1 bg-lime-500/10 border border-lime-500/20 rounded-full">
-                             <div className="w-2 h-2 bg-lime-500 rounded-full animate-pulse"></div>
-                             <span className="text-[10px] text-lime-500 font-mono uppercase tracking-widest">Server Online</span>
-                         </div>
                     </div>
-
-                    {/* Dashboard View */}
-                    {activeTab === 'dashboard' && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                            {[
-                                { label: "Total Tracks", val: props.tracks.length, color: "text-lime-400", bg: "bg-lime-500/10" },
-                                { label: "Video Assets", val: props.videos.length, color: "text-orange-400", bg: "bg-orange-500/10" },
-                                { label: "Articles", val: props.articles.length, color: "text-cyan-400", bg: "bg-cyan-500/10" },
-                                { label: "Gallery Items", val: props.gallery.length, color: "text-purple-400", bg: "bg-purple-500/10" }
-                            ].map((stat, i) => (
-                                <div key={i} className="bg-[#111]/80 backdrop-blur border border-white/10 p-6 rounded-xl hover:border-white/30 transition-all group">
-                                    <div className={`w-12 h-12 rounded-lg ${stat.bg} ${stat.color} flex items-center justify-center mb-4 text-xl font-bold`}>
-                                        {i === 0 ? '♫' : i === 1 ? '▶' : i === 2 ? 'Aa' : '▣'}
-                                    </div>
-                                    <div className="text-3xl font-display font-bold text-white mb-1 group-hover:translate-x-1 transition-transform">{stat.val}</div>
-                                    <div className="text-xs text-slate-500 uppercase tracking-widest font-mono">{stat.label}</div>
-                                </div>
-                            ))}
-                            <div className="col-span-full mt-8 bg-[#111]/50 border border-white/10 rounded-xl p-8 text-center border-dashed">
-                                <p className="text-slate-500 text-sm">请从左侧菜单选择要管理的资源模块。</p>
-                            </div>
-                        </div>
-                    )}
 
                     {/* Modules */}
                     <div className="animate-fade-in">
+                        {activeTab === 'dashboard' && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                {[
+                                    { label: "Total Tracks", val: props.tracks.length, color: "text-lime-400", bg: "bg-lime-500/10" },
+                                    { label: "Video Assets", val: props.videos.length, color: "text-orange-400", bg: "bg-orange-500/10" },
+                                    { label: "Articles", val: props.articles.length, color: "text-cyan-400", bg: "bg-cyan-500/10" },
+                                    { label: "Gallery Items", val: props.gallery.length, color: "text-purple-400", bg: "bg-purple-500/10" }
+                                ].map((stat, i) => (
+                                    <div key={i} className="bg-[#111]/80 backdrop-blur border border-white/10 p-6 rounded-xl hover:border-white/30 transition-all group">
+                                        <div className={`w-12 h-12 rounded-lg ${stat.bg} ${stat.color} flex items-center justify-center mb-4 text-xl font-bold`}>
+                                            {i === 0 ? '♫' : i === 1 ? '▶' : i === 2 ? 'Aa' : '▣'}
+                                        </div>
+                                        <div className="text-3xl font-display font-bold text-white mb-1 group-hover:translate-x-1 transition-transform">{stat.val}</div>
+                                        <div className="text-xs text-slate-500 uppercase tracking-widest font-mono">{stat.label}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                         {activeTab === 'music' && <MusicManager tracks={props.tracks} onAdd={t => props.onUpdateTracks([t, ...props.tracks])} onDelete={id => props.onUpdateTracks(props.tracks.filter(t => t.id !== id))} onUpdate={props.onUpdateTracks}/>}
                         {activeTab === 'video' && <VideoManager videos={props.videos} categories={props.categories} onUpdate={props.onUpdateVideos} />}
                         {activeTab === 'article' && <ArticleManager articles={props.articles} tracks={props.tracks} onAdd={a => props.onUpdateArticles([a, ...props.articles])} onDelete={id => props.onUpdateArticles(props.articles.filter(a => a.id !== id))} />}
@@ -191,135 +179,181 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
         </div>
     );
 
-    const renderHomeView = () => (
-        <div className="relative z-10 pt-24 pb-12 px-4 md:px-8 max-w-[1800px] mx-auto">
-            {/* BENTO HERO */}
-            <div className="grid grid-cols-1 md:grid-cols-12 md:grid-rows-2 gap-4 h-auto md:h-[600px] mb-24">
-                <BentoCard className="md:col-span-8 md:row-span-2 flex flex-col justify-between bg-[url('https://grainy-gradients.vercel.app/noise.svg')]">
-                    <div className="relative z-10">
-                        <div className="flex items-center gap-2 mb-4">
-                            <div className="w-2 h-2 bg-acid animate-pulse"></div>
-                            <span className="text-xs font-mono text-acid uppercase tracking-widest">System Online</span>
+    // --- HOME VIEW REDESIGNED ---
+    const renderHomeView = () => {
+        const heroVideo = props.videos.find(v => v.isHero) || props.videos[0];
+        
+        return (
+            <div className="relative z-10 w-full min-h-screen text-white overflow-hidden pb-32">
+                {/* 1. DYNAMIC BACKGROUND LAYER */}
+                <div className="fixed inset-0 bg-aurora opacity-30 pointer-events-none z-[-1]"></div>
+                <div className="fixed inset-0 bg-gradient-to-b from-transparent via-[#050505]/50 to-[#050505] z-[-1]"></div>
+                
+                {/* 2. IMMERSIVE HERO */}
+                <div className="relative w-full h-[85vh] flex items-center justify-center pt-20 px-4">
+                    <div className="w-full max-w-[1600px] h-full relative rounded-[3rem] overflow-hidden border border-white/10 shadow-2xl group animate-fade-in">
+                        {/* Hero Content Background */}
+                        <div className="absolute inset-0">
+                            {heroVideo ? (
+                                heroVideo.videoUrl ? 
+                                <video src={heroVideo.videoUrl} className="w-full h-full object-cover scale-105 group-hover:scale-100 transition-transform duration-[2s]" autoPlay muted loop playsInline /> 
+                                : <img src={heroVideo.coverUrl} className="w-full h-full object-cover" />
+                            ) : <div className="w-full h-full bg-slate-900"></div>}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent"></div>
                         </div>
-                        <h1 className="text-[15vw] md:text-[9rem] font-display font-black leading-[0.8] tracking-tighter text-white mix-blend-difference">NEXUS</h1>
-                    </div>
-                    <div className="relative z-10 flex flex-col md:flex-row justify-between items-end gap-6">
-                        <p className="text-xl md:text-2xl text-slate-300 font-light max-w-lg">连接 <span className="text-acid font-bold">听觉</span> 与 <span className="text-neon font-bold">视觉</span> 的下一代智能终端。</p>
-                        <button onClick={() => props.onNavigate('music')} className="px-8 py-4 bg-white text-black font-bold uppercase tracking-widest hover:bg-acid transition-all">探索媒体库 &rarr;</button>
-                    </div>
-                </BentoCard>
-                <BentoCard className="md:col-span-4 md:row-span-1 flex flex-col justify-between">
-                        <div className="text-5xl font-display font-bold text-white tracking-tighter">{new Date().getHours().toString().padStart(2,'0')}:{new Date().getMinutes().toString().padStart(2,'0')}</div>
-                        <div className="text-xs font-mono text-slate-400 uppercase">Secure Connection</div>
-                </BentoCard>
-                <BentoCard onClick={() => fileInputRef.current?.click()} className="md:col-span-2 md:row-span-1 flex flex-col items-center justify-center text-center gap-4 hover:bg-white/5 cursor-pointer">
-                        <div className="w-12 h-12 rounded-full border border-white/20 flex items-center justify-center group-hover:border-acid">⚡</div>
-                        <span className="text-xs font-bold uppercase tracking-widest text-slate-300">音频分析</span>
-                        <input type="file" ref={fileInputRef} onChange={(e) => e.target.files && props.onAnalyze(e.target.files[0])} className="hidden" accept="audio/*" />
-                </BentoCard>
-                <BentoCard className="md:col-span-2 md:row-span-1 relative flex items-center bg-acid/5 border-acid/20">
-                        <div className="w-full text-center"><span className="text-4xl font-black text-acid">V5</span></div>
-                </BentoCard>
-            </div>
 
-            <div className="space-y-32">
-                <section>
-                    <Marquee text="CINEMA EXPERIENCE" opacity={0.05} />
-                    <div className="relative z-10 -mt-20">
-                        <SectionHeader title="影视中心" sub="影视数据库 / Cinema DB" color="orange" onMore={() => props.onNavigate('video')} />
-                        <div className="hidden lg:block"><VideoGrid videos={props.videos} onPauseMusic={handlePauseMusic} /></div>
-                        <div className="lg:hidden text-center text-slate-500 text-xs">请在桌面端获得最佳观影体验</div>
+                        {/* Hero Text */}
+                        <div className="absolute bottom-0 left-0 p-12 md:p-24 w-full md:w-2/3 flex flex-col items-start gap-6">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full border border-white/20">
+                                <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                                <span className="text-xs font-bold uppercase tracking-widest">Featured Premiere</span>
+                            </div>
+                            <h1 className="text-6xl md:text-8xl font-display font-black leading-none tracking-tighter drop-shadow-lg">
+                                {heroVideo?.title || "NEXUS AUDIO"}
+                            </h1>
+                            <p className="text-lg md:text-xl text-slate-200 font-light max-w-xl leading-relaxed glass-panel p-4 rounded-xl border-l-4 border-acid backdrop-blur-sm bg-black/30">
+                                {heroVideo?.description || "Experience the next generation of audio-visual synthesis."}
+                            </p>
+                            <div className="flex items-center gap-4 mt-4">
+                                <button onClick={() => props.onNavigate('video')} className="px-8 py-4 bg-white text-black font-bold uppercase tracking-widest rounded-xl hover:bg-acid hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,255,255,0.3)]">
+                                    立即观看
+                                </button>
+                                <button onClick={() => props.onNavigate('music')} className="px-8 py-4 bg-black/30 backdrop-blur-md border border-white/30 text-white font-bold uppercase tracking-widest rounded-xl hover:bg-white/10 transition-all">
+                                    探索更多
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                </section>
-                <section>
-                    <SectionHeader title="精选音乐" sub="精选歌单 / Featured Tracks" color="acid" onMore={() => props.onNavigate('music')} />
-                    <MusicGrid tracks={props.tracks} onPlay={handlePlay} playingId={playingId} />
-                </section>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
+                </div>
+
+                {/* 3. FLOATING DOCK NAVIGATION */}
+                <div className="sticky top-[90vh] z-50 flex justify-center -mt-24 pointer-events-none">
+                    <div className="pointer-events-auto bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl p-2 flex items-center gap-2 shadow-[0_10px_40px_rgba(0,0,0,0.5)] animate-float">
+                        {[
+                            { id: 'music', icon: '♫', label: 'Music' },
+                            { id: 'video', icon: '▶', label: 'Cinema' },
+                            { id: 'article', icon: 'Aa', label: 'Read' },
+                            { id: 'gallery', icon: '▣', label: 'Art' },
+                            { id: 'dashboard', icon: '⚡', label: 'Studio' }
+                        ].map(item => (
+                            <button 
+                                key={item.id} 
+                                onClick={() => props.onNavigate(item.id)}
+                                className="w-16 h-16 rounded-xl flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-white hover:bg-white/10 hover:scale-110 transition-all group relative"
+                            >
+                                <span className="text-xl group-hover:text-acid transition-colors">{item.icon}</span>
+                                <span className="text-[9px] font-bold uppercase tracking-wider">{item.label}</span>
+                                <div className="absolute -bottom-1 w-1 h-1 bg-acid rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* 4. CONTENT SWIMLANES */}
+                <div className="relative z-20 max-w-[1800px] mx-auto space-y-32 px-4 md:px-12 mt-32">
+                    
+                    {/* Latest Music */}
                     <section>
-                        <SectionHeader title="深度专栏" sub="深度编辑 / Editorial Hub" color="cyber" onMore={() => props.onNavigate('article')} />
-                        <ArticleGrid articles={props.articles.slice(0, 2)} onRead={setReadingArticle} />
+                         <div className="flex items-end justify-between mb-12 border-b border-white/10 pb-4">
+                            <div>
+                                <h2 className="text-4xl md:text-5xl font-display font-bold uppercase tracking-tight">Sonic Layers</h2>
+                                <p className="text-sm font-mono text-acid mt-2 tracking-[0.3em]">/// LATEST_AUDIO_DROPS</p>
+                            </div>
+                            <button onClick={() => props.onNavigate('music')} className="hidden md:block text-xs font-bold uppercase tracking-widest hover:text-acid transition-colors">View All Music &rarr;</button>
+                        </div>
+                        <MusicGrid tracks={props.tracks.slice(0, 10)} onPlay={handlePlay} playingId={playingId} />
                     </section>
-                    <section>
-                        <SectionHeader title="视觉画廊" sub="艺术画廊 / Visual Arts" color="neon" onMore={() => props.onNavigate('gallery')} />
-                        <GalleryGrid images={props.gallery.slice(0, 6)} />
+
+                    {/* Articles & Gallery Split */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24">
+                        <section className="bg-white/5 border border-white/5 rounded-3xl p-8 hover:border-cyan-500/30 transition-colors group">
+                            <SectionHeader title="Editorial" sub="Deep_Dive" color="cyber" onMore={() => props.onNavigate('article')} />
+                            <div className="mt-8">
+                                <ArticleGrid articles={props.articles.slice(0, 2)} onRead={setReadingArticle} />
+                            </div>
+                        </section>
+                        
+                        <section className="bg-white/5 border border-white/5 rounded-3xl p-8 hover:border-neon/30 transition-colors group">
+                            <SectionHeader title="Gallery" sub="Visual_Arts" color="neon" onMore={() => props.onNavigate('gallery')} />
+                            <div className="mt-8">
+                                <GalleryGrid images={props.gallery.slice(0, 4)} />
+                            </div>
+                        </section>
+                    </div>
+
+                    {/* Tools CTA */}
+                    <section className="relative rounded-[3rem] overflow-hidden bg-gradient-to-r from-purple-900/40 to-blue-900/40 border border-white/10 p-12 md:p-24 text-center">
+                        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none"></div>
+                        <h2 className="text-4xl md:text-7xl font-display font-black mb-8">CREATE WITH AI</h2>
+                        <p className="text-xl text-slate-300 max-w-2xl mx-auto mb-12 font-light">
+                            Analyze audio structure, generate Suno prompts, and explore musical DNA with our advanced AI tools.
+                        </p>
+                        <button onClick={() => fileInputRef.current?.click()} className="px-12 py-5 bg-white text-black font-bold text-lg rounded-full hover:bg-acid hover:scale-105 transition-all shadow-xl uppercase tracking-widest">
+                            Start Analysis
+                        </button>
+                        <input type="file" ref={fileInputRef} onChange={(e) => e.target.files && props.onAnalyze(e.target.files[0])} className="hidden" accept="audio/*" />
                     </section>
                 </div>
+
+                <footer className="mt-32 border-t border-white/10 bg-[#020202] py-12 text-center text-xs text-slate-500 font-mono">
+                    NEXUS AUDIO LAB © 2024 SYSTEM CORE // DESIGNED FOR THE FUTURE
+                </footer>
             </div>
-            
-             <footer className="mt-32 border-t border-white/10 bg-[#020202] py-12 text-center text-xs text-slate-500 font-mono">
-                NEXUS AUDIO LAB © 2024 SYSTEM CORE
-            </footer>
-        </div>
-    );
-
-    // Determines what main content to render based on `currentView`
-    const renderContent = () => {
-        if (adminMode) return renderAdminPanel();
-        if (readingArticle) return null; // ArticleView overlays everything, handled below in root return
-
-        switch(props.currentView) {
-            case 'home': 
-                return renderHomeView();
-            case 'video':
-                // Video Grid (Transparent BG implied by not having bg-color on wrapper in VideoGrid)
-                return <VideoGrid videos={props.videos} onPauseMusic={handlePauseMusic} />;
-            case 'music':
-                return (
-                    <div className="pt-24 md:pt-0"> {/* Special padding for Music view if needed, but MusicGrid handles hero */}
-                        <MusicGrid tracks={props.tracks} onPlay={handlePlay} playingId={playingId} />
-                    </div>
-                );
-            case 'article':
-                return (
-                    <div className="pt-24 px-4 md:px-8 max-w-[1600px] mx-auto">
-                        <SectionHeader title="深度专栏" sub="Editorial_Hub" color="cyber" />
-                        <ArticleGrid articles={props.articles} onRead={setReadingArticle} />
-                    </div>
-                );
-            case 'gallery':
-                return (
-                    <div className="pt-24 px-4 md:px-8 max-w-[1600px] mx-auto">
-                        <SectionHeader title="视觉画廊" sub="Visual_Arts" color="neon" />
-                        <GalleryGrid images={props.gallery} />
-                    </div>
-                );
-            default: return null;
-        }
+        );
     };
 
     // --- ROOT RENDER ---
     return (
-        <div className={`min-h-screen bg-[#050505] text-white ${adminMode ? '' : 'pb-32'}`}>
+        <div className={`min-h-screen bg-[#050505] text-white ${adminMode ? '' : 'pb-0'}`}>
             <AdminLoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} onLogin={handleLoginSubmit} />
             
-            {/* Navbar - Hide in Admin, or if reading article */}
+            {/* Navbar */}
             {!adminMode && !readingArticle && (
                 <Navbar 
                     onNavigate={props.onNavigate} 
                     onAdmin={handleAdminClick} 
                     onSettings={props.onOpenSettings} 
                     currentView={props.currentView} 
-                    transparent={props.currentView === 'video' || props.currentView === 'music'} 
+                    transparent={true} // Always transparent for new layout
                 />
             )}
 
-            {/* Main Content Area */}
-            {renderContent()}
-
-            {/* Article Overlay */}
-            {readingArticle && (
-                <ArticleView 
-                    article={readingArticle} 
-                    relatedTrack={props.tracks.find(t => t.id === readingArticle.trackId)} 
-                    isPlaying={playingId === readingArticle.trackId}
-                    onTogglePlay={() => handlePlay(readingArticle.trackId || null)}
-                    onBack={() => setReadingArticle(null)}
-                />
+            {/* Content Switcher */}
+            {adminMode ? renderAdminPanel() : (
+                readingArticle ? (
+                    <ArticleView 
+                        article={readingArticle} 
+                        relatedTrack={props.tracks.find(t => t.id === readingArticle.trackId)} 
+                        isPlaying={playingId === readingArticle.trackId}
+                        onTogglePlay={() => handlePlay(readingArticle.trackId || null)}
+                        onBack={() => setReadingArticle(null)}
+                    />
+                ) : (
+                    <>
+                        {props.currentView === 'home' && renderHomeView()}
+                        {props.currentView === 'music' && (
+                            <div className="pt-24 min-h-screen bg-black/90">
+                                <MusicGrid tracks={props.tracks} onPlay={handlePlay} playingId={playingId} />
+                            </div>
+                        )}
+                        {props.currentView === 'video' && <VideoGrid videos={props.videos} onPauseMusic={handlePauseMusic} />}
+                        {props.currentView === 'article' && (
+                            <div className="pt-24 px-4 md:px-8 max-w-[1600px] mx-auto min-h-screen">
+                                <SectionHeader title="深度专栏" sub="Editorial_Hub" color="cyber" />
+                                <ArticleGrid articles={props.articles} onRead={setReadingArticle} />
+                            </div>
+                        )}
+                        {props.currentView === 'gallery' && (
+                            <div className="pt-24 px-4 md:px-8 max-w-[1600px] mx-auto min-h-screen">
+                                <SectionHeader title="视觉画廊" sub="Visual_Arts" color="neon" />
+                                <GalleryGrid images={props.gallery} />
+                            </div>
+                        )}
+                    </>
+                )
             )}
 
-            {/* GLOBAL AUDIO - PERSISTENT IN DOM */}
-            {/* This ensures audio doesn't restart when React re-renders layout components */}
+            {/* GLOBAL AUDIO */}
             {currentTrack && (
                 <audio 
                     ref={audioRef} 
@@ -329,9 +363,7 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
                     crossOrigin="anonymous" 
                     onTimeUpdate={handleTimeUpdate}
                     onEnded={() => setPlayingId(null)}
-                    onError={(e) => {
-                        console.error("Audio playback error:", e);
-                    }} 
+                    onError={(e) => { console.error("Audio playback error:", e); }} 
                     {...{ referrerPolicy: "no-referrer" } as any} 
                     className="hidden"
                 />
