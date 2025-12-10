@@ -133,7 +133,7 @@ export const MusicManager: React.FC<MusicManagerProps> = ({ tracks, onAdd, onDel
   // Helper to format path display
   const formatPathDisplay = (path: string) => {
       if (!path) return '';
-      if (path.startsWith('/api/file/')) return 'Audio Resource Ready (R2)';
+      if (path.startsWith('/api/file/')) return '云端资源 (R2 Direct Link)';
       return path;
   };
 
