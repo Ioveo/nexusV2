@@ -138,15 +138,12 @@ export const VideoManager: React.FC<VideoManagerProps> = ({ videos, categories, 
   };
 
   const handleDelete = async (id: string) => {
-      if (!confirm("确定删除？")) return;
-      const vid = videos.find(v => v.id === id);
+      if (!confirm("确定删除此视频信息？(源文件将保留)")) return;
       const updated = videos.filter(v => v.id !== id);
       onUpdate(updated);
       try {
           await storageService.saveVideos(updated);
-          if (vid?.sourceType === 'local' && vid.videoUrl.includes('/api/file/')) {
-              await storageService.deleteFile(vid.videoUrl);
-          }
+          // Removed: await storageService.deleteFile(...) to prevent deleting R2 source
       } catch(e) { console.error(e); }
   };
 
