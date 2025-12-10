@@ -263,9 +263,10 @@ export default {
           }
 
           // GET Request
+          // FIX: Do NOT pass `onlyIf: request.headers` to R2. 
+          // Browser If-Match headers often conflict with R2 ETags during streaming, causing 412 errors.
           const object = await env.SONIC_BUCKET.get(key, {
               range: rangeHeader ? request.headers : undefined,
-              onlyIf: request.headers, 
           });
 
           if (!object) {
@@ -281,7 +282,8 @@ export default {
           
           if (object.httpEtag) headers.set('ETag', object.httpEtag);
           headers.set('Accept-Ranges', 'bytes'); 
-          headers.set('Cache-Control', 'public, max-age=31536000');
+          // Remove strict cache control that might interfere with testing, or keep it looser
+          headers.set('Cache-Control', 'public, max-age=3600'); 
 
           // Handle Range Response (206 Partial Content)
           if (rangeHeader && object.range) {
