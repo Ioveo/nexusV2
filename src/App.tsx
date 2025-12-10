@@ -40,61 +40,69 @@ const PRESET_CATEGORIES: Category[] = [
 const UploadIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-lime-400 group-hover:text-lime-300 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>);
 const LinkIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-cyan-400 group-hover:text-cyan-300 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>);
 
-// --- NEW INTRO SCREEN ---
-const CyberIntro = ({ onComplete }: { onComplete: () => void }) => {
-    const [phase, setPhase] = useState(0);
-    const [lines, setLines] = useState<string[]>([]);
+// --- NEW CINEMATIC INTRO SCREEN ---
+const CinematicIntro = ({ onComplete }: { onComplete: () => void }) => {
+    const [visible, setVisible] = useState(true);
+    const [zoom, setZoom] = useState(false);
 
     useEffect(() => {
-        const bootSequence = [
-            "INITIALIZING KERNEL...",
-            "LOADING AUDIO MODULES...",
-            "CONNECTING TO R2 STORAGE...",
-            "SYNCING QUANTUM NODES...",
-            "SYSTEM READY."
-        ];
-        
-        // Phase 0: Boot Text
-        let delay = 0;
-        bootSequence.forEach((line, i) => {
-            setTimeout(() => setLines(prev => [...prev, line]), delay);
-            delay += 400;
-        });
+        // Step 1: Initialize
+        const t1 = setTimeout(() => setZoom(true), 2500); // Trigger zoom out / transition
+        const t2 = setTimeout(() => {
+            setVisible(false);
+            onComplete();
+        }, 3200); // End intro
 
-        // Phase 1: Logo Reveal
-        setTimeout(() => setPhase(1), delay + 200);
-
-        // Phase 2: Fade Out
-        setTimeout(() => setPhase(2), delay + 2500);
-        
-        // Complete
-        setTimeout(onComplete, delay + 3200);
+        return () => {
+            clearTimeout(t1);
+            clearTimeout(t2);
+        };
     }, [onComplete]);
 
+    if (!visible) return null;
+
     return (
-        <div className={`fixed inset-0 z-[300] bg-[#000] flex flex-col items-center justify-center transition-opacity duration-700 ${phase === 2 ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+        <div className={`fixed inset-0 z-[300] bg-black flex flex-col items-center justify-center transition-opacity duration-1000 ${zoom ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
             
-            {/* Background Grid */}
-            <div className="absolute inset-0 bg-[linear-gradient(rgba(0,255,0,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,0,0.03)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_70%,transparent_100%)]"></div>
-
-            <div className="relative z-10 w-full max-w-lg text-center">
-                {/* Boot Lines */}
-                {phase === 0 && (
-                    <div className="font-mono text-xs text-lime-500/80 text-left space-y-1 h-32 px-8">
-                        {lines.map((l, i) => <div key={i}>&gt; {l}</div>)}
-                        <div className="w-2 h-4 bg-lime-500 animate-pulse inline-block"></div>
-                    </div>
-                )}
-
-                {/* Logo Reveal */}
-                <div className={`transition-all duration-1000 transform ${phase >= 1 ? 'scale-100 opacity-100 blur-0' : 'scale-150 opacity-0 blur-xl'} flex flex-col items-center`}>
-                     <div className="relative mb-6">
-                        <div className="absolute -inset-4 bg-lime-500/20 blur-xl rounded-full"></div>
-                        <h1 className="text-8xl md:text-9xl font-display font-black text-white tracking-tighter mix-blend-screen glitch relative z-10" data-text="NEXUS">NEXUS</h1>
-                     </div>
-                     <div className="h-px w-32 bg-gradient-to-r from-transparent via-lime-500 to-transparent"></div>
-                     <p className="text-lime-400 font-mono text-xs mt-4 tracking-[0.5em] uppercase">Audio Architecture v5.0</p>
+            {/* Background Atmosphere */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-gray-900 via-black to-black opacity-80"></div>
+            
+            {/* The Audio Core (Animated Pulse) */}
+            <div className={`relative flex items-center justify-center transition-transform duration-[2000ms] ease-in-out ${zoom ? 'scale-[20]' : 'scale-100'}`}>
+                {/* Ripple 1 */}
+                <div className="absolute w-40 h-40 rounded-full border border-lime-500/30 animate-ripple"></div>
+                {/* Ripple 2 */}
+                <div className="absolute w-40 h-40 rounded-full border border-cyan-500/20 animate-ripple" style={{ animationDelay: '0.5s' }}></div>
+                
+                {/* Central Orb */}
+                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-lime-500 to-cyan-500 shadow-[0_0_50px_rgba(132,204,22,0.5)] z-10 flex items-center justify-center relative animate-pulse-fast">
+                    <div className="absolute inset-0 bg-white/20 rounded-full blur-md"></div>
+                    <svg className="w-10 h-10 text-black z-20" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
                 </div>
+                
+                {/* Orbit Ring */}
+                <div className="absolute w-64 h-64 rounded-full border border-white/5 animate-spin-slow">
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2 h-2 bg-white rounded-full shadow-[0_0_10px_#fff]"></div>
+                </div>
+            </div>
+
+            {/* Typography */}
+            <div className={`mt-16 text-center transition-all duration-700 ${zoom ? 'opacity-0 translate-y-10' : 'opacity-100 translate-y-0'}`}>
+                <h1 className="text-6xl font-display font-black text-white tracking-tighter mb-4 animate-fade-in">
+                    NEXUS <span className="text-transparent bg-clip-text bg-gradient-to-r from-lime-400 to-cyan-400">AUDIO</span>
+                </h1>
+                <div className="flex items-center justify-center gap-4 text-xs font-mono text-slate-500 uppercase tracking-[0.5em] animate-fade-in" style={{ animationDelay: '0.3s' }}>
+                    <span>Connect</span>
+                    <span className="w-1 h-1 bg-lime-500 rounded-full"></span>
+                    <span>Listen</span>
+                    <span className="w-1 h-1 bg-cyan-500 rounded-full"></span>
+                    <span>Create</span>
+                </div>
+            </div>
+            
+            {/* Loading Bar */}
+            <div className={`absolute bottom-20 w-48 h-1 bg-white/10 rounded-full overflow-hidden ${zoom ? 'opacity-0' : 'opacity-100'}`}>
+                <div className="h-full bg-gradient-to-r from-lime-500 to-cyan-500 animate-[width_3s_ease-in-out_forwards]" style={{ width: '0%' }}></div>
             </div>
         </div>
     );
@@ -238,7 +246,7 @@ function App() {
 
   return (
     <div className="bg-[#050505] min-h-screen text-slate-100 font-sans selection:bg-[#ccff00] selection:text-black">
-        {showIntro && <CyberIntro onComplete={() => setShowIntro(false)} />}
+        {showIntro && <CinematicIntro onComplete={() => setShowIntro(false)} />}
         <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
         
         {(status === AnalysisStatus.PROCESSING_AUDIO || status === AnalysisStatus.ANALYZING_AI || status === AnalysisStatus.CREATING_PLAN) && (
