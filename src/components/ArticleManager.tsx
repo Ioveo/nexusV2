@@ -69,6 +69,7 @@ export const ArticleManager: React.FC<ArticleManagerProps> = ({ articles, tracks
       if (!file) return;
       setState(p => ({ ...p, isUploading: true }));
       try {
+          // Use standard upload
           const url = await storageService.uploadFile(file);
           insertAtCursor(`\n![Image](${url})\n`);
       } catch (e) {
