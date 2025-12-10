@@ -584,7 +584,6 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
         </div>
     );
 
-    if (props.currentView === 'video') return <SimpleLayout title="影视中心" subtitle="Cinema_Database" color="orange"><VideoGrid videos={props.videos} onPauseMusic={handlePauseMusic} /></SimpleLayout>;
     if (props.currentView === 'music') return <SimpleLayout title="精选音乐" subtitle="Sonic_Archive" color="acid"><MusicGrid tracks={props.tracks} onPlay={handlePlay} playingId={playingId} /></SimpleLayout>;
     if (props.currentView === 'article') return <SimpleLayout title="深度专栏" subtitle="Editorial_Hub" color="cyber"><ArticleGrid articles={props.articles} onRead={setReadingArticle} /></SimpleLayout>;
     if (props.currentView === 'gallery') return <SimpleLayout title="视觉画廊" subtitle="Visual_Arts" color="neon"><GalleryGrid images={props.gallery} /></SimpleLayout>;
