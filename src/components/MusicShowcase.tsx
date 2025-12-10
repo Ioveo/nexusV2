@@ -140,6 +140,8 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
                     ref={audioRef} 
                     src={getAudioSrc(currentTrack)} 
                     autoPlay 
+                    preload="auto"
+                    crossOrigin="anonymous"
                     onTimeUpdate={handleTimeUpdate}
                     onEnded={() => setPlayingId(null)} 
                     {...{ referrerPolicy: "no-referrer" } as any} 
