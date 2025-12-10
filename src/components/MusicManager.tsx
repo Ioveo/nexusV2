@@ -1,3 +1,4 @@
+
 // src/components/MusicManager.tsx
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -136,6 +137,9 @@ export const MusicManager: React.FC<MusicManagerProps> = ({ tracks, onAdd, onDel
       if (path.startsWith('/api/file/')) return '云端资源 (R2 Direct Link)';
       return path;
   };
+  
+  const auditionTrack = tracks.find(t => t.id === auditionId);
+  const isCorsRestricted = auditionTrack?.sourceType === 'netease' || auditionTrack?.sourceType === 'qq';
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
@@ -201,12 +205,13 @@ export const MusicManager: React.FC<MusicManagerProps> = ({ tracks, onAdd, onDel
                             }
                         }} className="hidden"/>
                      </div>
+                     <p className="text-[10px] text-slate-500 text-center">建议尺寸: 500x500 (列表) 或 16:9 (轮播主推)</p>
 
                      <label className="flex items-center gap-3 p-4 bg-white/5 border border-white/10 rounded-xl cursor-pointer hover:bg-lime-500/10 hover:border-lime-500/30 transition-all">
                         <input type="checkbox" checked={state.isHero} onChange={e => setState({...state, isHero: e.target.checked})} className="accent-lime-500 w-4 h-4"/>
                         <div className="flex flex-col">
-                            <span className="text-sm font-bold text-white">设为主推 (Hero Track)</span>
-                            <span className="text-[10px] text-slate-500">将在首页大屏展示</span>
+                            <span className="text-sm font-bold text-white">设为【音乐主页】轮播推荐</span>
+                            <span className="text-[10px] text-slate-500">Music Landing Page Hero (建议横屏封面)</span>
                         </div>
                     </label>
                 </div>
@@ -329,12 +334,12 @@ export const MusicManager: React.FC<MusicManagerProps> = ({ tracks, onAdd, onDel
             ))}
         </div>
         
-        {auditionId && (
+        {auditionId && auditionTrack && (
             <audio 
                 ref={audioRef}
-                src={getAudioSrc(tracks.find(t => t.id === auditionId)!)}
+                src={getAudioSrc(auditionTrack)}
                 autoPlay
-                crossOrigin="anonymous"
+                crossOrigin={isCorsRestricted ? undefined : "anonymous"}
                 onEnded={() => setAuditionId(null)}
                 onError={() => setAuditionId(null)}
                 {...{ referrerPolicy: "no-referrer" } as any}
