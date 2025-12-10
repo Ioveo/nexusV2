@@ -140,14 +140,12 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
                     ref={audioRef} 
                     src={getAudioSrc(currentTrack)} 
                     autoPlay 
-                    preload="auto"
+                    preload="metadata"
                     crossOrigin="anonymous" 
                     onTimeUpdate={handleTimeUpdate}
                     onEnded={() => setPlayingId(null)}
                     onError={(e) => {
                         console.error("Audio playback error:", e);
-                        // Optionally setPlayingId(null) here if you want to stop the UI loading state, 
-                        // but sometimes errors are transient.
                     }} 
                     {...{ referrerPolicy: "no-referrer" } as any} 
                     className="hidden"
@@ -271,20 +269,16 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
     }
 
     // Default Page Wrapper
-    const SimpleLayout = ({ children, title, subtitle, color }: any) => (
-        <MainLayout>
-            <div className="max-w-[1600px] mx-auto pt-24 px-4 md:px-8">
-                <div className="mb-12 border-b border-white/10 pb-6">
-                    <h1 className="text-5xl md:text-7xl font-display font-black text-white uppercase tracking-tighter mb-2">{title}</h1>
-                    <p className={`text-xl font-mono text-${color}`}>{subtitle}</p>
-                </div>
+    const SimpleLayout = ({ children, title, subtitle, color, noPadding = false }: any) => (
+        <MainLayout transparent={true}>
+            <div className={`mx-auto ${noPadding ? '' : 'pt-24 px-4 md:px-8 max-w-[1600px]'}`}>
                 {children}
             </div>
         </MainLayout>
     );
 
-    // Using SimpleLayout which now wraps MusicGrid with the new design
-    if (props.currentView === 'music') return <SimpleLayout title="精选音乐" subtitle="// Sonic_Archive" color="acid"><MusicGrid tracks={props.tracks} onPlay={handlePlay} playingId={playingId} /></SimpleLayout>;
+    // Using SimpleLayout with noPadding for MusicGrid to allow full bleed hero
+    if (props.currentView === 'music') return <SimpleLayout title="精选音乐" subtitle="// Sonic_Archive" color="acid" noPadding={true}><MusicGrid tracks={props.tracks} onPlay={handlePlay} playingId={playingId} /></SimpleLayout>;
     if (props.currentView === 'article') return <SimpleLayout title="深度专栏" subtitle="// Editorial_Hub" color="cyber"><ArticleGrid articles={props.articles} onRead={setReadingArticle} /></SimpleLayout>;
     if (props.currentView === 'gallery') return <SimpleLayout title="视觉画廊" subtitle="// Visual_Arts" color="neon"><GalleryGrid images={props.gallery} /></SimpleLayout>;
 
