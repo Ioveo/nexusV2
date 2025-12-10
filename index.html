@@ -28,6 +28,7 @@
               'glitch': 'glitch 1s linear infinite',
               'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite',
               'spin-slow': 'spin 10s linear infinite',
+              'fade-in': 'fadeIn 0.5s ease-out forwards',
             },
             keyframes: {
               marquee: {
@@ -37,6 +38,10 @@
               'marquee-reverse': {
                 '0%': { transform: 'translateX(-100%)' },
                 '100%': { transform: 'translateX(0%)' },
+              },
+              fadeIn: {
+                '0%': { opacity: '0', transform: 'translateY(10px)' },
+                '100%': { opacity: '1', transform: 'translateY(0)' },
               }
             }
           }
@@ -69,8 +74,8 @@
       ::-webkit-scrollbar-thumb { background: #333; }
       ::-webkit-scrollbar-thumb:hover { background: var(--acid); }
       
-      .no-scrollbar::-webkit-scrollbar { display: none; }
-      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      .hide-scrollbar::-webkit-scrollbar { display: none; }
+      .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
       /* Utility */
       .text-outline {
