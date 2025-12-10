@@ -40,7 +40,7 @@ export const storageService = {
       }
   },
 
-  // ... [Existing methods for tracks, articles, etc.] ...
+  // ... [Get/Save methods for KV data remain same] ...
   
   async getTracks(): Promise<GalleryTrack[]> {
     const res = await fetch(`${API_BASE}/api/tracks`);
@@ -95,61 +95,85 @@ export const storageService = {
     if (!res.ok) throw new Error('Failed to save categories');
   },
 
-  // --- OPTIMIZED UPLOAD WITH PROGRESS (XHR) ---
-  uploadFile(file: File, onProgress?: (percent: number) => void): Promise<string> {
-    return new Promise((resolve, reject) => {
-        // 1. Check size limit (Cloudflare Worker standard limit ~100MB)
-        if (file.size > 99 * 1024 * 1024) {
-            reject(new Error("文件过大！Cloudflare Worker 限制最大 100MB。大文件请使用外部链接。"));
-            return;
+  // --- SMART UPLOAD: SUPPORTS LARGE FILES VIA MULTIPART ---
+  async uploadFile(file: File, onProgress?: (percent: number) => void): Promise<string> {
+    const CHUNK_SIZE = 10 * 1024 * 1024; // 10MB Chunks (Safe for Worker)
+    
+    // 1. Small files (< 20MB): Use simple upload
+    if (file.size < 20 * 1024 * 1024) {
+        return new Promise((resolve, reject) => {
+            const ext = file.name.split('.').pop();
+            const uniqueKey = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${ext}`;
+            const xhr = new XMLHttpRequest();
+            xhr.open('PUT', `${API_BASE}/api/upload?key=${uniqueKey}`, true);
+            xhr.setRequestHeader('Content-Type', file.type);
+            xhr.setRequestHeader('x-admin-password', localStorage.getItem('admin_password') || '');
+            
+            xhr.upload.onprogress = (e) => {
+                if (e.lengthComputable && onProgress) onProgress((e.loaded / e.total) * 100);
+            };
+            
+            xhr.onload = () => {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    try { resolve(JSON.parse(xhr.responseText).url); } catch(e) { resolve(xhr.responseText); }
+                } else reject(new Error("Upload Failed"));
+            };
+            xhr.onerror = () => reject(new Error("Network Error"));
+            xhr.send(file);
+        });
+    }
+
+    // 2. Large files: Multipart Upload
+    try {
+        const pwd = localStorage.getItem('admin_password') || '';
+        
+        // A. Init
+        const initRes = await fetch(`${API_BASE}/api/upload/mp/create`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-admin-password': pwd },
+            body: JSON.stringify({ filename: file.name, contentType: file.type })
+        });
+        if (!initRes.ok) throw new Error("Init Upload Failed");
+        const { uploadId, key } = await initRes.json();
+
+        // B. Upload Parts
+        const totalParts = Math.ceil(file.size / CHUNK_SIZE);
+        const parts: { partNumber: number, etag: string }[] = [];
+
+        for (let i = 0; i < totalParts; i++) {
+            const start = i * CHUNK_SIZE;
+            const end = Math.min(start + CHUNK_SIZE, file.size);
+            const chunk = file.slice(start, end);
+            const partNumber = i + 1;
+
+            // Using fetch for simplicity in loop, but XHR could be used for finer chunk progress
+            const partRes = await fetch(`${API_BASE}/api/upload/mp/part?uploadId=${uploadId}&key=${key}&partNumber=${partNumber}`, {
+                method: 'PUT',
+                headers: { 'x-admin-password': pwd },
+                body: chunk
+            });
+
+            if (!partRes.ok) throw new Error(`Part ${partNumber} Failed`);
+            const { etag } = await partRes.json();
+            parts.push({ partNumber, etag });
+
+            if (onProgress) onProgress(((i + 1) / totalParts) * 100);
         }
 
-        const ext = file.name.split('.').pop();
-        const uniqueKey = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${ext}`;
-        const url = `${API_BASE}/api/upload?key=${uniqueKey}`;
-        const pwd = localStorage.getItem('admin_password') || '';
-
-        const xhr = new XMLHttpRequest();
-        xhr.open('PUT', url, true);
+        // C. Complete
+        const completeRes = await fetch(`${API_BASE}/api/upload/mp/complete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-admin-password': pwd },
+            body: JSON.stringify({ uploadId, key, parts })
+        });
         
-        // Headers
-        xhr.setRequestHeader('Content-Type', file.type);
-        xhr.setRequestHeader('x-admin-password', pwd);
+        if (!completeRes.ok) throw new Error("Completion Failed");
+        const { url } = await completeRes.json();
+        return url;
 
-        // Progress event
-        xhr.upload.onprogress = (e) => {
-            if (e.lengthComputable && onProgress) {
-                const percentComplete = (e.loaded / e.total) * 100;
-                onProgress(percentComplete);
-            }
-        };
-
-        // Completion
-        xhr.onload = () => {
-            if (xhr.status >= 200 && xhr.status < 300) {
-                try {
-                    const data = JSON.parse(xhr.responseText);
-                    resolve(data.url);
-                } catch (e) {
-                    resolve(xhr.responseText); // Fallback
-                }
-            } else {
-                try {
-                    const errData = JSON.parse(xhr.responseText);
-                    reject(new Error(errData.error || `Upload failed: ${xhr.statusText}`));
-                } catch(e) {
-                    reject(new Error(`Upload failed: ${xhr.statusText}`));
-                }
-            }
-        };
-
-        // Error
-        xhr.onerror = () => {
-            reject(new Error("Network Error during upload"));
-        };
-
-        xhr.send(file);
-    });
+    } catch (e: any) {
+        throw new Error(e.message || "Multipart Upload Error");
+    }
   },
 
   async deleteFile(url: string): Promise<void> {
