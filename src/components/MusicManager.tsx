@@ -138,7 +138,7 @@ export const MusicManager: React.FC<MusicManagerProps> = ({ tracks, onAdd, onDel
   };
 
   return (
-    <div className="max-w-5xl space-y-8">
+    <div className="max-w-7xl mx-auto space-y-8">
         <FileSelectorModal 
             isOpen={showFileSelector} 
             onClose={() => setShowFileSelector(false)} 
@@ -146,120 +146,184 @@ export const MusicManager: React.FC<MusicManagerProps> = ({ tracks, onAdd, onDel
             onSelect={(url) => setState(prev => ({...prev, inputValue: url, sourceType: 'local'}))}
         />
 
-        <div className="flex justify-between items-center">
-            <div className="flex items-center gap-4">
-                <h3 className="text-2xl font-bold hidden md:block">音乐管理 ({tracks.length})</h3>
-                {r2Status && (
-                  <div className={`px-2 py-1 rounded text-[10px] font-mono border flex items-center gap-1 ${r2Status.ok ? 'bg-lime-500/10 border-lime-500/30 text-lime-500' : 'bg-red-500/10 border-red-500/30 text-red-500'}`}>
-                      <div className={`w-1.5 h-1.5 rounded-full ${r2Status.ok ? 'bg-lime-500' : 'bg-red-500'}`}></div>
-                      R2: {r2Status.ok ? 'Ready' : r2Status.message}
-                  </div>
-                )}
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/10 pb-6">
+            <div>
+                <h3 className="text-3xl font-display font-bold text-white mb-1">音乐资源库</h3>
+                <div className="flex items-center gap-2 text-xs text-slate-500 font-mono">
+                    <span>TOTAL: {tracks.length}</span>
+                    <span className="text-white/20">|</span>
+                    {r2Status && (
+                        <span className={`flex items-center gap-1.5 ${r2Status.ok ? 'text-lime-500' : 'text-red-500'}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${r2Status.ok ? 'bg-lime-500' : 'bg-red-500'}`}></span>
+                            R2 STORAGE: {r2Status.ok ? 'ONLINE' : r2Status.message}
+                        </span>
+                    )}
+                </div>
             </div>
             {mode === 'edit' && (
-                <button onClick={resetForm} className="px-4 py-2 bg-slate-700 text-white rounded text-sm hover:bg-slate-600">
+                <button onClick={resetForm} className="px-6 py-2 bg-white/10 text-white rounded-full text-xs font-bold hover:bg-white/20 transition-colors uppercase tracking-widest">
                     取消编辑
                 </button>
             )}
         </div>
 
-        <div className={`max-w-2xl space-y-6 bg-[#111] p-6 rounded-xl border ${mode === 'edit' ? 'border-lime-500/50' : 'border-white/10'}`}>
-            <h4 className="text-sm font-bold text-white uppercase tracking-wider mb-2">
-                  {mode === 'edit' ? '正在编辑歌曲' : '发布新作品'}
-            </h4>
-            <input type="text" placeholder="标题" value={state.title} onChange={e => setState({...state, title: e.target.value})} className="w-full bg-black border border-white/10 p-3 rounded-lg text-white"/>
-            <input type="text" placeholder="艺术家" value={state.artist} onChange={e => setState({...state, artist: e.target.value})} className="w-full bg-black border border-white/10 p-3 rounded-lg text-white"/>
-            
-            <div className="grid grid-cols-4 gap-2">
-                {['local','netease','qq','link'].map(t => (
-                    <button key={t} onClick={() => setState({...state, sourceType: t as any})} className={`py-2 rounded border text-xs font-bold uppercase ${state.sourceType === t ? 'bg-white text-black' : 'border-white/10 text-slate-500'}`}>{t}</button>
-                ))}
+        {/* Editor Form */}
+        <div className="bg-[#111] border border-white/10 rounded-2xl p-6 md:p-8 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none">
+                <svg className="w-64 h-64 text-lime-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
             </div>
-            
-            {state.sourceType === 'local' ? 
-            <div className="space-y-2 p-3 bg-black rounded border border-white/10">
-                <div className="flex gap-3">
-                    <div className="flex-1">
-                        <p className="text-[10px] text-slate-500 mb-1 uppercase font-bold">上传新音频</p>
-                        <input type="file" ref={fileInputRef} onChange={e => e.target.files && setState({...state, audioFile: e.target.files[0]})} className="text-sm text-slate-400 w-full"/>
-                    </div>
-                    <div className="w-px bg-white/10"></div>
-                    <div className="flex-1 flex flex-col justify-end">
-                        <p className="text-[10px] text-slate-500 mb-1 uppercase font-bold">选择已有音频</p>
-                        <button onClick={() => setShowFileSelector(true)} className="w-full py-1.5 bg-white/10 hover:bg-white/20 rounded text-sm text-white">媒体库</button>
-                    </div>
+
+            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8">
+                {/* Left: Cover & Basic Info */}
+                <div className="lg:col-span-4 space-y-6">
+                     <div 
+                        onClick={() => coverInputRef.current?.click()}
+                        className="aspect-square bg-black/50 border-2 border-dashed border-white/20 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-lime-500/50 hover:bg-lime-500/5 transition-all relative overflow-hidden group/cover"
+                     >
+                        {state.cover ? (
+                            <img src={state.cover} className="w-full h-full object-cover" />
+                        ) : (
+                            <div className="text-center p-4">
+                                <div className="text-2xl mb-2 text-slate-600 group-hover/cover:text-lime-500 transition-colors">📷</div>
+                                <div className="text-xs text-slate-500 font-bold uppercase">上传封面</div>
+                            </div>
+                        )}
+                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover/cover:opacity-100 transition-opacity">
+                            <span className="text-xs font-bold text-white uppercase tracking-widest">点击更换</span>
+                        </div>
+                        <input type="file" ref={coverInputRef} onChange={async (e) => {
+                            if(e.target.files?.[0]) {
+                                try {
+                                    const url = await storageService.uploadFile(e.target.files[0]);
+                                    setState(p => ({...p, cover: url}));
+                                } catch(e){}
+                            }
+                        }} className="hidden"/>
+                     </div>
+
+                     <label className="flex items-center gap-3 p-4 bg-white/5 border border-white/10 rounded-xl cursor-pointer hover:bg-lime-500/10 hover:border-lime-500/30 transition-all">
+                        <input type="checkbox" checked={state.isHero} onChange={e => setState({...state, isHero: e.target.checked})} className="accent-lime-500 w-4 h-4"/>
+                        <div className="flex flex-col">
+                            <span className="text-sm font-bold text-white">设为主推 (Hero Track)</span>
+                            <span className="text-[10px] text-slate-500">将在首页大屏展示</span>
+                        </div>
+                    </label>
                 </div>
-                {state.inputValue && !state.audioFile && (
-                    <p className="text-xs text-lime-400 mt-2 truncate">资源就绪: {formatPathDisplay(state.inputValue)}</p>
-                )}
-                {mode === 'edit' && !state.inputValue && !state.audioFile && <p className="text-[10px] text-lime-400">保留原音频</p>}
-            </div> :
-            <input type="text" placeholder="链接或ID" value={state.inputValue} onChange={e => setState({...state, inputValue: e.target.value})} className="w-full bg-black border border-white/10 p-3 rounded-lg text-white font-mono text-sm"/>
-            }
 
-            <div className="p-4 border border-dashed border-white/20 rounded cursor-pointer" onClick={() => coverInputRef.current?.click()}>
-                {state.cover ? (
-                    <div className="flex items-center gap-2">
-                        <img src={state.cover} className="w-8 h-8 rounded object-cover" />
-                        <span className="text-lime-500 text-xs">封面已就绪 (点击更换)</span>
+                {/* Right: Metadata & Source */}
+                <div className="lg:col-span-8 space-y-6">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">歌曲标题</label>
+                            <input type="text" value={state.title} onChange={e => setState({...state, title: e.target.value})} className="w-full bg-black/50 border border-white/10 p-4 rounded-xl text-white focus:border-lime-500 outline-none transition-colors font-bold text-lg" placeholder="Song Title" />
+                        </div>
+                        <div className="space-y-2">
+                             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">艺术家</label>
+                            <input type="text" value={state.artist} onChange={e => setState({...state, artist: e.target.value})} className="w-full bg-black/50 border border-white/10 p-4 rounded-xl text-white focus:border-lime-500 outline-none transition-colors font-bold text-lg" placeholder="Artist Name" />
+                        </div>
                     </div>
-                ) : <span className="text-xs text-slate-500">点击上传封面 (留空将自动随机生成)</span>}
-                <input type="file" ref={coverInputRef} onChange={async (e) => {
-                    if(e.target.files) {
-                        try {
-                            const url = await storageService.uploadFile(e.target.files[0]);
-                            setState(p => ({...p, cover: url}));
-                        } catch(e){}
-                    }
-                }} className="hidden"/>
+
+                    <div className="space-y-4 pt-4 border-t border-white/10">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">音频来源配置</label>
+                        <div className="flex gap-2">
+                            {['local','netease','qq','link'].map(t => (
+                                <button key={t} onClick={() => setState({...state, sourceType: t as any})} className={`px-4 py-2 rounded-lg text-xs font-bold uppercase transition-all ${state.sourceType === t ? 'bg-lime-500 text-black shadow-[0_0_15px_#84cc1666]' : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'}`}>
+                                    {t === 'local' ? '本地上传' : t === 'link' ? '外部链接' : t}
+                                </button>
+                            ))}
+                        </div>
+
+                        {state.sourceType === 'local' ? (
+                            <div className="p-6 bg-black/30 border border-white/10 rounded-xl flex items-center gap-6">
+                                <div className="flex-1">
+                                    <div className="text-xs font-bold text-slate-300 mb-2">方式 A: 上传新文件</div>
+                                    <input type="file" ref={fileInputRef} onChange={e => e.target.files && setState({...state, audioFile: e.target.files[0]})} className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-lime-500/10 file:text-lime-500 hover:file:bg-lime-500/20"/>
+                                </div>
+                                <div className="w-px h-12 bg-white/10"></div>
+                                <div className="flex-1">
+                                    <div className="text-xs font-bold text-slate-300 mb-2">方式 B: 媒体库选择</div>
+                                    <button onClick={() => setShowFileSelector(true)} className="w-full py-2 bg-white/5 hover:bg-white/10 rounded-lg text-xs font-bold text-slate-300 border border-white/10">浏览云端文件...</button>
+                                </div>
+                            </div>
+                        ) : (
+                            <input type="text" placeholder="输入链接或 ID..." value={state.inputValue} onChange={e => setState({...state, inputValue: e.target.value})} className="w-full bg-black/50 border border-white/10 p-4 rounded-xl text-white font-mono text-sm focus:border-lime-500 outline-none" />
+                        )}
+
+                        {(state.inputValue || state.audioFile) && state.sourceType === 'local' && (
+                             <div className="text-xs text-lime-400 font-mono flex items-center gap-2">
+                                 <span className="w-1.5 h-1.5 bg-lime-500 rounded-full animate-pulse"></span>
+                                 资源已就绪: {state.audioFile ? state.audioFile.name : formatPathDisplay(state.inputValue)}
+                             </div>
+                        )}
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">LRC 歌词 (可选)</label>
+                        <textarea 
+                            value={state.lyrics} 
+                            onChange={e => setState({...state, lyrics: e.target.value})} 
+                            className="w-full h-24 bg-black/50 border border-white/10 p-4 rounded-xl text-slate-400 font-mono text-xs focus:border-lime-500 outline-none resize-none custom-scrollbar"
+                            placeholder="[00:00.00] 粘贴歌词文本..."
+                        />
+                    </div>
+
+                    <button 
+                        onClick={handleTrackPublish} 
+                        disabled={state.isUploading} 
+                        className={`w-full py-4 font-bold rounded-xl text-sm uppercase tracking-widest transition-all shadow-lg relative overflow-hidden ${state.isUploading ? 'bg-slate-800 cursor-not-allowed text-slate-500' : 'bg-lime-500 hover:bg-lime-400 text-black shadow-lime-500/20'}`}
+                    >
+                        <span className="relative z-10">{state.isUploading ? `UPLOADING ${Math.round(uploadProgress)}%` : (mode === 'edit' ? '保存更改' : '发布单曲')}</span>
+                        {state.isUploading && (
+                            <div className="absolute top-0 left-0 h-full bg-lime-500/20 z-0 transition-all duration-300" style={{ width: `${uploadProgress}%` }}></div>
+                        )}
+                    </button>
+                </div>
             </div>
-
-            <label className="flex items-center gap-3 p-3 border border-white/10 rounded cursor-pointer hover:bg-white/5">
-                <input type="checkbox" checked={state.isHero} onChange={e => setState({...state, isHero: e.target.checked})} />
-                <span className="text-sm text-slate-300">设为主推 (Hero Track)</span>
-            </label>
-
-            <textarea 
-                placeholder="LRC 歌词 (可选)" 
-                value={state.lyrics} 
-                onChange={e => setState({...state, lyrics: e.target.value})} 
-                className="w-full h-32 bg-black border border-white/10 p-3 rounded-lg text-slate-300 font-mono text-xs resize-none"
-            />
-
-            <button onClick={handleTrackPublish} disabled={state.isUploading} className={`w-full py-4 font-bold rounded-xl disabled:opacity-50 relative overflow-hidden ${mode === 'edit' ? 'bg-lime-600 hover:bg-lime-500 text-white' : 'bg-lime-500 text-black hover:bg-lime-400'}`}>
-                <div className="relative z-10">{state.isUploading ? `Uploading... ${Math.round(uploadProgress)}%` : (mode === 'edit' ? '保存修改' : '发布')}</div>
-                {state.isUploading && (
-                    <div className="absolute top-0 left-0 h-full bg-black/20 transition-all duration-300 z-0" style={{ width: `${uploadProgress}%` }}></div>
-                )}
-            </button>
         </div>
 
-        <div className="space-y-4 pt-8 border-t border-white/10">
+        {/* Track List */}
+        <div className="space-y-3">
+            <div className="flex items-center px-4 pb-2 text-[10px] font-bold text-slate-600 uppercase tracking-widest">
+                <div className="w-16">Cover</div>
+                <div className="flex-1">Track Info</div>
+                <div className="w-32 hidden md:block">Source</div>
+                <div className="w-32 text-right">Actions</div>
+            </div>
+            
             {tracks.map(t => (
-                <div key={t.id} className="flex items-center gap-4 p-4 bg-[#111] rounded-xl border border-white/5 hover:border-lime-500/30 transition-colors group">
-                    <img src={t.coverUrl} className="w-10 h-10 rounded bg-slate-800 object-cover" />
-                    <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                             <div className="font-bold text-sm truncate text-white">{t.title}</div>
-                             {t.isHero && <span className="text-[10px] bg-lime-500 text-black px-1.5 rounded font-bold">HERO</span>}
+                <div key={t.id} className="group flex items-center gap-4 p-4 bg-[#111] rounded-xl border border-white/5 hover:border-lime-500/50 hover:bg-[#151515] transition-all hover:scale-[1.005]">
+                    <div className="relative w-16 h-16 shrink-0 rounded-lg overflow-hidden border border-white/10">
+                        <img src={t.coverUrl} className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                             <button 
+                                onClick={() => setAuditionId(auditionId === t.id ? null : t.id)} 
+                                className="w-8 h-8 bg-lime-500 rounded-full flex items-center justify-center text-black hover:scale-110 transition-transform"
+                             >
+                                 {auditionId === t.id ? '⏸' : '▶'}
+                             </button>
                         </div>
-                        <div className="text-xs text-slate-500 truncate">{t.artist}</div>
                     </div>
                     
-                    <div className="flex items-center gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
-                        <button 
-                            onClick={() => setAuditionId(auditionId === t.id ? null : t.id)} 
-                            className={`w-8 h-8 rounded-full flex items-center justify-center border ${auditionId === t.id ? 'bg-lime-500 text-black border-lime-500' : 'border-white/20 text-slate-400 hover:text-white'}`}
-                        >
-                            {auditionId === t.id ? (
-                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-                            ) : (
-                                <svg className="w-3 h-3 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                            )}
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                            <h4 className="font-bold text-white text-base truncate">{t.title}</h4>
+                            {t.isHero && <span className="px-1.5 py-0.5 bg-lime-500 text-black text-[9px] font-black rounded uppercase">Hero</span>}
+                        </div>
+                        <div className="text-xs text-slate-500 font-medium">{t.artist}</div>
+                    </div>
+
+                    <div className="w-32 hidden md:block text-xs font-mono text-slate-500 uppercase">
+                        {t.sourceType}
+                    </div>
+                    
+                    <div className="w-32 flex justify-end gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => handleEdit(t)} className="p-2 hover:bg-white/10 rounded-lg text-slate-300 hover:text-white transition-colors">
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                         </button>
-                        
-                        <button onClick={() => handleEdit(t)} className="px-3 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded">编辑</button>
-                        <button onClick={() => onDelete(t.id)} className="text-red-500 text-xs px-3 py-1 bg-red-500/10 rounded hover:bg-red-500 hover:text-white shrink-0 ml-2">删除</button>
+                        <button onClick={() => onDelete(t.id)} className="p-2 hover:bg-red-500/20 rounded-lg text-slate-300 hover:text-red-500 transition-colors">
+                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
                     </div>
                 </div>
             ))}
@@ -274,6 +338,7 @@ export const MusicManager: React.FC<MusicManagerProps> = ({ tracks, onAdd, onDel
                 onEnded={() => setAuditionId(null)}
                 onError={() => setAuditionId(null)}
                 {...{ referrerPolicy: "no-referrer" } as any}
+                className="hidden"
             />
         )}
     </div>
