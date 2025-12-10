@@ -1,3 +1,5 @@
+// src/components/Visualizer.tsx
+
 
 import React, { useEffect, useRef } from 'react';
 
@@ -16,65 +18,76 @@ export const Visualizer: React.FC<VisualizerProps> = ({ audioElement, isPlaying 
   useEffect(() => {
     if (!audioElement || !canvasRef.current) return;
 
-    // Initialize Audio Context only once on user interaction (handled implicitly by playback usually, but we set it up here)
+    // Initialize Audio Context
     if (!audioContextRef.current) {
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
       audioContextRef.current = new AudioContextClass();
-      
-      analyserRef.current = audioContextRef.current.createAnalyser();
-      analyserRef.current.fftSize = 256;
-      
-      // Prevent error if source already exists for this element
+    }
+
+    const ctx = audioContextRef.current;
+    if (!ctx) return;
+
+    // Connect Source (Robustly)
+    if (!sourceRef.current) {
       try {
-          sourceRef.current = audioContextRef.current.createMediaElementSource(audioElement);
-          sourceRef.current.connect(analyserRef.current);
-          analyserRef.current.connect(audioContextRef.current.destination);
+        analyserRef.current = ctx.createAnalyser();
+        analyserRef.current.fftSize = 256;
+        
+        // Use try-catch for MediaElementSource creation as it fails if CORS is tainted
+        sourceRef.current = ctx.createMediaElementSource(audioElement);
+        sourceRef.current.connect(analyserRef.current);
+        analyserRef.current.connect(ctx.destination);
       } catch (e) {
-          // Source likely already connected, which is fine
+        console.warn("Visualizer failed to connect to audio source (likely CORS or state issue). Audio will still play.", e);
+        // We do NOT return here, we allow the component to render a blank/idle state instead of crashing
       }
     }
 
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
+    const canvasCtx = canvas.getContext('2d');
     const analyser = analyserRef.current;
 
-    if (!ctx || !analyser) return;
+    if (!canvasCtx) return;
 
     const renderFrame = () => {
       animationRef.current = requestAnimationFrame(renderFrame);
       
+      // If analyser failed to init, just draw idle state
+      if (!analyser) {
+          canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+          return;
+      }
+
       const bufferLength = analyser.frequencyBinCount;
       const dataArray = new Uint8Array(bufferLength);
       analyser.getByteFrequencyData(dataArray);
 
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
 
       const barWidth = (canvas.width / bufferLength) * 2.5;
       let barHeight;
       let x = 0;
 
       for (let i = 0; i < bufferLength; i++) {
-        barHeight = dataArray[i] / 2; // Scale down height
+        barHeight = dataArray[i] / 2; 
 
-        // Gradient color based on frequency intensity
-        const gradient = ctx.createLinearGradient(0, canvas.height, 0, canvas.height - barHeight);
-        gradient.addColorStop(0, '#6366f1'); // Indigo 500
-        gradient.addColorStop(1, '#a855f7'); // Purple 500
+        const gradient = canvasCtx.createLinearGradient(0, canvas.height, 0, canvas.height - barHeight);
+        gradient.addColorStop(0, '#6366f1'); 
+        gradient.addColorStop(1, '#a855f7'); 
 
-        ctx.fillStyle = gradient;
+        canvasCtx.fillStyle = gradient;
         
-        // Rounded top bars
-        ctx.beginPath();
-        ctx.roundRect(x, canvas.height - barHeight, barWidth, barHeight, [4, 4, 0, 0]);
-        ctx.fill();
+        canvasCtx.beginPath();
+        canvasCtx.roundRect(x, canvas.height - barHeight, barWidth, barHeight, [4, 4, 0, 0]);
+        canvasCtx.fill();
 
         x += barWidth + 1;
       }
     };
 
     if (isPlaying) {
-      if (audioContextRef.current?.state === 'suspended') {
-        audioContextRef.current.resume();
+      if (ctx.state === 'suspended') {
+        ctx.resume();
       }
       renderFrame();
     } else {
