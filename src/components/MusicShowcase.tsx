@@ -141,9 +141,14 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
                     src={getAudioSrc(currentTrack)} 
                     autoPlay 
                     preload="auto"
-                    crossOrigin="anonymous"
+                    crossOrigin="anonymous" 
                     onTimeUpdate={handleTimeUpdate}
-                    onEnded={() => setPlayingId(null)} 
+                    onEnded={() => setPlayingId(null)}
+                    onError={(e) => {
+                        console.error("Audio playback error:", e);
+                        // Optionally setPlayingId(null) here if you want to stop the UI loading state, 
+                        // but sometimes errors are transient.
+                    }} 
                     {...{ referrerPolicy: "no-referrer" } as any} 
                     className="hidden"
                 />
@@ -166,7 +171,7 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
     }
 
     if (adminMode) {
-        // CMS View (Simplified for brevity, logic remains in Manager components)
+        // CMS View
         return (
              <div className="min-h-screen bg-[#020617] text-white pt-24 px-4 md:px-8">
                 <div className="max-w-7xl mx-auto">
@@ -278,6 +283,7 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
         </MainLayout>
     );
 
+    // Using SimpleLayout which now wraps MusicGrid with the new design
     if (props.currentView === 'music') return <SimpleLayout title="精选音乐" subtitle="// Sonic_Archive" color="acid"><MusicGrid tracks={props.tracks} onPlay={handlePlay} playingId={playingId} /></SimpleLayout>;
     if (props.currentView === 'article') return <SimpleLayout title="深度专栏" subtitle="// Editorial_Hub" color="cyber"><ArticleGrid articles={props.articles} onRead={setReadingArticle} /></SimpleLayout>;
     if (props.currentView === 'gallery') return <SimpleLayout title="视觉画廊" subtitle="// Visual_Arts" color="neon"><GalleryGrid images={props.gallery} /></SimpleLayout>;
