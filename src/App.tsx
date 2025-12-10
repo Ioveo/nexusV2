@@ -4,19 +4,17 @@ import React, { useState, useRef, useEffect } from 'react';
 import { AnalysisStatus, AudioAnalysisResult, CreativeGeneratorRequest, GalleryTrack, Video, GalleryImage, Article, Category } from './types';
 import { analyzeAudioWithGemini, analyzeMusicMetadata, generateCreativeSunoPlan, generateInstantRemix } from './services/geminiService';
 import { storageService } from './services/storageService';
-import { Visualizer } from './components/Visualizer';
 import { AnalysisDisplay } from './components/AnalysisDisplay';
 import { SunoBuilder } from './components/SunoBuilder';
 import { CustomGenerator } from './components/CustomGenerator';
 import { MusicShowcase } from './components/MusicShowcase';
 import { SettingsModal } from './components/SettingsModal';
 
-// ... (PRESET DATA kept as is, ensure you have the full list from previous response) ...
+// ... (PRESET DATA kept as is) ...
 const PRESET_TRACKS: GalleryTrack[] = [
     { id: "p1", title: "Neon Blade", artist: "MoonDeity", coverUrl: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=1000", sourceType: "netease", src: "1954302324", addedAt: 1715000000000 },
     { id: "p2", title: "After Dark", artist: "Mr.Kitty", coverUrl: "https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=1000", sourceType: "netease", src: "1330348068", addedAt: 1715000001000 },
 ];
-// (Assume other presets are defined here as per previous code)
 const PRESET_VIDEOS: Video[] = [
     { id: 'v1', title: 'Tears of Steel', author: 'Blender', videoUrl: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4', coverUrl: 'https://images.unsplash.com/photo-1535016120720-40c6874c3b1c?q=80&w=1000', sourceType: 'external', category: 'Sci-Fi', addedAt: Date.now(), isHero: true },
     { id: 'v2', title: 'Sintel', author: 'Blender', videoUrl: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4', coverUrl: 'https://images.unsplash.com/photo-1618331835717-801e976710b2?q=80&w=1000', sourceType: 'external', category: 'Animation', addedAt: Date.now() },
@@ -42,19 +40,61 @@ const PRESET_CATEGORIES: Category[] = [
 const UploadIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-lime-400 group-hover:text-lime-300 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>);
 const LinkIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-cyan-400 group-hover:text-cyan-300 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>);
 
-// --- COMPONENTS ---
-const IntroScreen = ({ onComplete }: { onComplete: () => void }) => {
+// --- NEW INTRO SCREEN ---
+const CyberIntro = ({ onComplete }: { onComplete: () => void }) => {
     const [phase, setPhase] = useState(0);
+    const [lines, setLines] = useState<string[]>([]);
+
     useEffect(() => {
-        setTimeout(() => setPhase(1), 500);
-        setTimeout(() => setPhase(2), 2500);
-        setTimeout(onComplete, 3000);
+        const bootSequence = [
+            "INITIALIZING KERNEL...",
+            "LOADING AUDIO MODULES...",
+            "CONNECTING TO R2 STORAGE...",
+            "SYNCING QUANTUM NODES...",
+            "SYSTEM READY."
+        ];
+        
+        // Phase 0: Boot Text
+        let delay = 0;
+        bootSequence.forEach((line, i) => {
+            setTimeout(() => setLines(prev => [...prev, line]), delay);
+            delay += 400;
+        });
+
+        // Phase 1: Logo Reveal
+        setTimeout(() => setPhase(1), delay + 200);
+
+        // Phase 2: Fade Out
+        setTimeout(() => setPhase(2), delay + 2500);
+        
+        // Complete
+        setTimeout(onComplete, delay + 3200);
     }, [onComplete]);
+
     return (
-        <div className={`fixed inset-0 z-[300] bg-[#050505] flex flex-col items-center justify-center transition-opacity duration-500 ${phase === 2 ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-            <div className={`relative z-10 text-center transition-all duration-1000 transform ${phase >= 1 ? 'scale-100 opacity-100' : 'scale-90 opacity-0'}`}>
-                 <h1 className="text-8xl font-display font-black text-white tracking-tighter mix-blend-difference glitch" data-text="NEXUS">NEXUS</h1>
-                 <p className="text-[#ccff00] font-mono text-sm mt-4 tracking-[1em] uppercase animate-pulse">SYSTEM ONLINE</p>
+        <div className={`fixed inset-0 z-[300] bg-[#000] flex flex-col items-center justify-center transition-opacity duration-700 ${phase === 2 ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+            
+            {/* Background Grid */}
+            <div className="absolute inset-0 bg-[linear-gradient(rgba(0,255,0,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,0,0.03)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_70%,transparent_100%)]"></div>
+
+            <div className="relative z-10 w-full max-w-lg text-center">
+                {/* Boot Lines */}
+                {phase === 0 && (
+                    <div className="font-mono text-xs text-lime-500/80 text-left space-y-1 h-32 px-8">
+                        {lines.map((l, i) => <div key={i}>&gt; {l}</div>)}
+                        <div className="w-2 h-4 bg-lime-500 animate-pulse inline-block"></div>
+                    </div>
+                )}
+
+                {/* Logo Reveal */}
+                <div className={`transition-all duration-1000 transform ${phase >= 1 ? 'scale-100 opacity-100 blur-0' : 'scale-150 opacity-0 blur-xl'} flex flex-col items-center`}>
+                     <div className="relative mb-6">
+                        <div className="absolute -inset-4 bg-lime-500/20 blur-xl rounded-full"></div>
+                        <h1 className="text-8xl md:text-9xl font-display font-black text-white tracking-tighter mix-blend-screen glitch relative z-10" data-text="NEXUS">NEXUS</h1>
+                     </div>
+                     <div className="h-px w-32 bg-gradient-to-r from-transparent via-lime-500 to-transparent"></div>
+                     <p className="text-lime-400 font-mono text-xs mt-4 tracking-[0.5em] uppercase">Audio Architecture v5.0</p>
+                </div>
             </div>
         </div>
     );
@@ -62,9 +102,12 @@ const IntroScreen = ({ onComplete }: { onComplete: () => void }) => {
 
 const LoadingScreen = ({ status }: { status: AnalysisStatus }) => (
     <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-black/90 backdrop-blur-xl">
-        <div className="w-16 h-16 border-4 border-[#ccff00]/30 border-t-[#ccff00] rounded-full animate-spin mb-8"></div>
-        <h3 className="text-2xl font-display text-white tracking-widest uppercase animate-pulse">Processing</h3>
-        <p className="text-[#ccff00] font-mono text-xs mt-2">{status}</p>
+        <div className="relative w-24 h-24 mb-8">
+            <div className="absolute inset-0 border-4 border-white/10 rounded-full"></div>
+            <div className="absolute inset-0 border-4 border-t-lime-500 rounded-full animate-spin"></div>
+        </div>
+        <h3 className="text-2xl font-display text-white tracking-widest uppercase animate-pulse">正在处理</h3>
+        <p className="text-lime-400 font-mono text-xs mt-2 uppercase tracking-wide">{status}</p>
     </div>
 );
 
@@ -195,7 +238,7 @@ function App() {
 
   return (
     <div className="bg-[#050505] min-h-screen text-slate-100 font-sans selection:bg-[#ccff00] selection:text-black">
-        {showIntro && <IntroScreen onComplete={() => setShowIntro(false)} />}
+        {showIntro && <CyberIntro onComplete={() => setShowIntro(false)} />}
         <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
         
         {(status === AnalysisStatus.PROCESSING_AUDIO || status === AnalysisStatus.ANALYZING_AI || status === AnalysisStatus.CREATING_PLAN) && (
@@ -254,7 +297,7 @@ function App() {
                 
                 <div className="pt-24 px-4 md:px-8 max-w-7xl mx-auto">
                     
-                    {/* STUDIO DASHBOARD (Restore Fig 1 UI here) */}
+                    {/* STUDIO DASHBOARD */}
                     {view === 'dashboard' && !analysisData && (
                         <div className="min-h-[70vh] flex flex-col items-center justify-center animate-fade-in px-4">
                             <div className="text-center mb-16 relative">
