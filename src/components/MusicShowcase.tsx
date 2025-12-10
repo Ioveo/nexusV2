@@ -1,4 +1,3 @@
-
 // src/components/MusicShowcase.tsx
 
 import React, { useState, useRef } from 'react';
@@ -44,7 +43,7 @@ interface MusicShowcaseProps {
 export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
     const [adminMode, setAdminMode] = useState(false);
     const [showLoginModal, setShowLoginModal] = useState(false);
-    const [activeTab, setActiveTab] = useState('music');
+    const [activeTab, setActiveTab] = useState('dashboard'); // Changed default to dashboard for admin
     const [playingId, setPlayingId] = useState<string|null>(null);
     const [readingArticle, setReadingArticle] = useState<Article | null>(null);
     const [showLyrics, setShowLyrics] = useState(false);
@@ -103,24 +102,90 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
 
     // --- RENDER CONTENT HELPERS ---
 
+    const AdminSidebarItem = ({ id, label, icon }: { id: string, label: string, icon: React.ReactNode }) => (
+        <button 
+            onClick={() => setActiveTab(id)}
+            className={`w-full flex items-center gap-4 px-6 py-4 transition-all duration-300 border-r-2 ${activeTab === id ? 'border-lime-500 bg-white/5 text-white' : 'border-transparent text-slate-500 hover:text-white hover:bg-white/5'}`}
+        >
+            <div className={`w-5 h-5 ${activeTab === id ? 'text-lime-400' : 'text-slate-500'}`}>{icon}</div>
+            <span className="text-sm font-bold uppercase tracking-wider">{label}</span>
+        </button>
+    );
+
     const renderAdminPanel = () => (
-         <div className="min-h-screen bg-[#020617] text-white pt-24 px-4 md:px-8">
-            <div className="max-w-7xl mx-auto">
-                <div className="flex justify-between items-center mb-8 pb-6 border-b border-white/10">
-                    <h1 className="text-3xl font-display font-bold">SYSTEM CORE <span className="text-acid text-sm ml-2">CMS</span></h1>
-                    <button onClick={() => setAdminMode(false)} className="px-4 py-2 border border-white/20 text-xs">退出系统</button>
+         <div className="fixed inset-0 z-[150] bg-[#050505] text-white flex">
+            {/* Sidebar */}
+            <div className="w-64 h-full bg-[#0a0a0a] border-r border-white/10 flex flex-col">
+                <div className="p-8 border-b border-white/10">
+                    <h1 className="text-2xl font-display font-black text-white tracking-tighter">NEXUS <span className="text-lime-500">CORE</span></h1>
+                    <p className="text-[10px] text-slate-500 font-mono mt-2 uppercase tracking-widest">System Administration</p>
                 </div>
-                <div className="flex gap-2 mb-6 overflow-x-auto no-scrollbar">
-                    {['music','video','article','gallery','category'].map(tab => (
-                        <button key={tab} onClick={() => setActiveTab(tab)} className={`px-6 py-2 text-xs font-bold uppercase border ${activeTab === tab ? 'bg-acid text-black border-acid' : 'border-white/10'}`}>{tab}</button>
-                    ))}
+                
+                <div className="flex-1 py-6 overflow-y-auto">
+                    <AdminSidebarItem id="dashboard" label="概览仪表盘" icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>} />
+                    <AdminSidebarItem id="music" label="音乐资源管理" icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" /></svg>} />
+                    <AdminSidebarItem id="video" label="影视库管理" icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>} />
+                    <AdminSidebarItem id="article" label="专栏文章管理" icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" /></svg>} />
+                    <AdminSidebarItem id="gallery" label="视觉画廊管理" icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>} />
+                    <AdminSidebarItem id="category" label="全局分类配置" icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>} />
                 </div>
-                <div className="bg-[#0f172a]/50 border border-white/5 p-6 rounded-xl min-h-[500px]">
-                    {activeTab === 'music' && <MusicManager tracks={props.tracks} onAdd={t => props.onUpdateTracks([t, ...props.tracks])} onDelete={id => props.onUpdateTracks(props.tracks.filter(t => t.id !== id))} onUpdate={props.onUpdateTracks}/>}
-                    {activeTab === 'video' && <VideoManager videos={props.videos} categories={props.categories} onUpdate={props.onUpdateVideos} />}
-                    {activeTab === 'article' && <ArticleManager articles={props.articles} tracks={props.tracks} onAdd={a => props.onUpdateArticles([a, ...props.articles])} onDelete={id => props.onUpdateArticles(props.articles.filter(a => a.id !== id))} />}
-                    {activeTab === 'gallery' && <GalleryManager images={props.gallery} onUpdate={props.onUpdateGallery} />}
-                    {activeTab === 'category' && <CategoryManager categories={props.categories} onUpdate={props.onUpdateCategories} />}
+
+                <div className="p-6 border-t border-white/10">
+                    <button onClick={() => setAdminMode(false)} className="w-full py-3 border border-white/20 hover:border-red-500 hover:text-red-500 text-slate-400 font-bold uppercase tracking-widest text-xs transition-colors rounded">
+                        退出安全模式
+                    </button>
+                </div>
+            </div>
+
+            {/* Content Area */}
+            <div className="flex-1 bg-[#050505] overflow-y-auto custom-scrollbar relative">
+                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none"></div>
+                <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-lime-500/5 to-transparent pointer-events-none"></div>
+
+                <div className="relative z-10 p-8 md:p-12 max-w-[1600px] mx-auto">
+                    {/* Header */}
+                    <div className="mb-8 flex items-end justify-between">
+                         <div>
+                             <h2 className="text-3xl font-bold text-white mb-2 uppercase">{activeTab.replace('_', ' ')}</h2>
+                             <p className="text-slate-500 text-sm font-mono">Administration Module Active</p>
+                         </div>
+                         <div className="flex items-center gap-2 px-3 py-1 bg-lime-500/10 border border-lime-500/20 rounded-full">
+                             <div className="w-2 h-2 bg-lime-500 rounded-full animate-pulse"></div>
+                             <span className="text-[10px] text-lime-500 font-mono uppercase tracking-widest">Server Online</span>
+                         </div>
+                    </div>
+
+                    {/* Dashboard View */}
+                    {activeTab === 'dashboard' && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            {[
+                                { label: "Total Tracks", val: props.tracks.length, color: "text-lime-400", bg: "bg-lime-500/10" },
+                                { label: "Video Assets", val: props.videos.length, color: "text-orange-400", bg: "bg-orange-500/10" },
+                                { label: "Articles", val: props.articles.length, color: "text-cyan-400", bg: "bg-cyan-500/10" },
+                                { label: "Gallery Items", val: props.gallery.length, color: "text-purple-400", bg: "bg-purple-500/10" }
+                            ].map((stat, i) => (
+                                <div key={i} className="bg-[#111]/80 backdrop-blur border border-white/10 p-6 rounded-xl hover:border-white/30 transition-all group">
+                                    <div className={`w-12 h-12 rounded-lg ${stat.bg} ${stat.color} flex items-center justify-center mb-4 text-xl font-bold`}>
+                                        {i === 0 ? '♫' : i === 1 ? '▶' : i === 2 ? 'Aa' : '▣'}
+                                    </div>
+                                    <div className="text-3xl font-display font-bold text-white mb-1 group-hover:translate-x-1 transition-transform">{stat.val}</div>
+                                    <div className="text-xs text-slate-500 uppercase tracking-widest font-mono">{stat.label}</div>
+                                </div>
+                            ))}
+                            <div className="col-span-full mt-8 bg-[#111]/50 border border-white/10 rounded-xl p-8 text-center border-dashed">
+                                <p className="text-slate-500 text-sm">请从左侧菜单选择要管理的资源模块。</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Modules */}
+                    <div className="animate-fade-in">
+                        {activeTab === 'music' && <MusicManager tracks={props.tracks} onAdd={t => props.onUpdateTracks([t, ...props.tracks])} onDelete={id => props.onUpdateTracks(props.tracks.filter(t => t.id !== id))} onUpdate={props.onUpdateTracks}/>}
+                        {activeTab === 'video' && <VideoManager videos={props.videos} categories={props.categories} onUpdate={props.onUpdateVideos} />}
+                        {activeTab === 'article' && <ArticleManager articles={props.articles} tracks={props.tracks} onAdd={a => props.onUpdateArticles([a, ...props.articles])} onDelete={id => props.onUpdateArticles(props.articles.filter(a => a.id !== id))} />}
+                        {activeTab === 'gallery' && <GalleryManager images={props.gallery} onUpdate={props.onUpdateGallery} />}
+                        {activeTab === 'category' && <CategoryManager categories={props.categories} onUpdate={props.onUpdateCategories} />}
+                    </div>
                 </div>
             </div>
         </div>
