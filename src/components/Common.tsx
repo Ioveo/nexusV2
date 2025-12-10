@@ -1,3 +1,4 @@
+
 // src/components/Common.tsx
 import React, { useState, useEffect } from 'react';
 import { GalleryTrack } from '../types';
@@ -188,7 +189,7 @@ export const Navbar = ({ onNavigate, onAdmin, onSettings, currentView, transpare
                 {id: 'article', label: '深度专栏'},
                 {id: 'gallery', label: '视觉画廊'}
             ].map(v => (
-                 <button key={v.id} onClick={() => onNavigate(v.id)} className={`px-6 py-2 text-xs font-bold uppercase tracking-widest transition-all clip-path-slant ${currentView === v.id ? 'bg-white text-black' : 'text-slate-400 hover:text-acid hover:bg-white/5 shadow-sm'}`}>
+                 <button key={v.id} onClick={() => onNavigate(v.id)} className={`px-6 py-2 text-xs font-bold uppercase tracking-widest transition-all clip-path-slant ${currentView === v.id ? 'bg-white text-black' : 'text-slate-400 hover:text-acid hover:text-black hover:bg-white/90 shadow-sm'}`}>
                     {v.label}
                  </button>
             ))}
@@ -231,15 +232,19 @@ export const GlobalPlayer = ({
             <div className="bg-[#111]/90 backdrop-blur-3xl border border-white/10 rounded-full p-2 pr-6 shadow-[0_20px_50px_rgba(0,0,0,0.6)] flex items-center gap-4 overflow-hidden relative group">
                     
                     {/* ProgressBar */}
-                    <div className="absolute bottom-0 left-0 h-[2px] bg-white/20 w-full z-0 cursor-pointer" onClick={onSeek}>
+                    <div className="absolute bottom-0 left-0 h-[2px] bg-white/20 w-full z-0 cursor-pointer hover:h-1 transition-all" onClick={onSeek}>
                         <div className="absolute top-0 left-0 h-full bg-acid transition-all duration-300" style={{ width: `${(currentTime/duration)*100}%` }}></div>
                     </div>
 
-                    {/* Cover */}
-                    <div className="relative shrink-0 w-14 h-14 rounded-full overflow-hidden border border-white/10 bg-black z-10">
+                    {/* Cover (Clickable for Lyrics) */}
+                    <div 
+                        onClick={onToggleLyrics}
+                        className="relative shrink-0 w-14 h-14 rounded-full overflow-hidden border border-white/10 bg-black z-10 cursor-pointer group/cover"
+                    >
                         <img src={track?.coverUrl} className="w-full h-full object-cover opacity-80 animate-[spin_8s_linear_infinite]" />
-                        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent rounded-full pointer-events-none"></div>
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-[#111] rounded-full border border-white/20"></div>
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/cover:opacity-100 transition-opacity">
+                            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" /></svg>
+                        </div>
                     </div>
                     
                     {/* Info */}
@@ -254,14 +259,10 @@ export const GlobalPlayer = ({
                     </div>
 
                     {/* Controls */}
-                    <div className="flex items-center gap-3 z-10">
+                    <div className="flex items-center gap-4 z-10">
                         <button onClick={onTogglePlay} className="w-10 h-10 rounded-full bg-white text-black hover:bg-acid hover:scale-110 transition-all flex items-center justify-center shadow-lg">
                             {/* Simple SVG for Play/Pause */}
                             <div className="w-3 h-3 bg-black"></div> 
-                        </button>
-
-                        <button onClick={onToggleLyrics} className={`text-[10px] font-bold uppercase px-2 py-1 rounded border transition-all ${showLyrics ? 'bg-acid text-black border-acid' : 'text-slate-400 border-white/20 hover:text-white'}`}>
-                            LRC
                         </button>
 
                         <button onClick={onClose} className="w-8 h-8 rounded-full bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white flex items-center justify-center transition-all ml-1">
