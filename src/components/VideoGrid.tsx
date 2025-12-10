@@ -9,6 +9,8 @@ interface VideoGridProps {
   onPauseMusic?: () => void;
 }
 
+const VIDEO_CATEGORIES = ['全部', '电影', 'MV', '纪录片', '动画', '科幻', '创意'];
+
 // --- SUB-COMPONENTS ---
 
 const CustomVideoPlayer = ({ video, onClose }: { video: Video, onClose: () => void }) => {
@@ -31,7 +33,7 @@ const InteractiveCarousel = ({ videos, onWatch }: { videos: Video[], onWatch: (v
         <div className="w-full py-12 px-4 md:px-12">
             <div className="flex items-center gap-3 mb-8">
                 <div className="w-1 h-6 bg-cyan-500 shadow-[0_0_10px_#06b6d4]"></div>
-                <h3 className="text-2xl font-display font-bold text-white uppercase tracking-wider">Trending Now</h3>
+                <h3 className="text-2xl font-display font-bold text-white uppercase tracking-wider">热门推荐</h3>
             </div>
             
             {/* The Accordion Container */}
@@ -50,7 +52,7 @@ const InteractiveCarousel = ({ videos, onWatch }: { videos: Video[], onWatch: (v
                         <div className="absolute bottom-0 left-0 w-full p-6 translate-y-full group-hover:translate-y-0 transition-transform duration-500 flex flex-col justify-end bg-gradient-to-t from-black/90 to-transparent h-1/2">
                             <span className="text-cyan-400 font-mono text-[10px] uppercase tracking-widest mb-1">{video.category}</span>
                             <h4 className="text-white font-bold text-xl md:text-3xl leading-none mb-2 line-clamp-2">{video.title}</h4>
-                            <p className="text-slate-300 text-xs line-clamp-2 opacity-0 group-hover:opacity-100 transition-opacity delay-100 duration-500">{video.description || "Watch now in 4K resolution."}</p>
+                            <p className="text-slate-300 text-xs line-clamp-2 opacity-0 group-hover:opacity-100 transition-opacity delay-100 duration-500">{video.description || "立即观看 4K 超清版本。"}</p>
                         </div>
 
                         {/* Rank Number (Visible when collapsed) */}
@@ -72,7 +74,7 @@ const BentoVideoGrid = ({ videos, onWatch }: { videos: Video[], onWatch: (v: Vid
         <div className="w-full py-12 px-4 md:px-12 bg-gradient-to-t from-[#050505] to-transparent">
              <div className="flex items-center gap-3 mb-8">
                 <div className="w-1 h-6 bg-purple-500 shadow-[0_0_10px_#a855f7]"></div>
-                <h3 className="text-2xl font-display font-bold text-white uppercase tracking-wider">Curated Collections</h3>
+                <h3 className="text-2xl font-display font-bold text-white uppercase tracking-wider">精选片单</h3>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 auto-rows-[250px] gap-4">
@@ -133,25 +135,28 @@ const BentoVideoGrid = ({ videos, onWatch }: { videos: Video[], onWatch: (v: Vid
 
 export const VideoGrid: React.FC<VideoGridProps> = ({ videos, onPauseMusic }) => {
   const [playingVideo, setPlayingVideo] = useState<Video | null>(null);
+  const [filter, setFilter] = useState('全部');
 
   if (!videos.length) return (
       <div className="flex items-center justify-center h-screen text-slate-500">
-          No Video Content Available
+          暂无影视内容
       </div>
   );
 
   // 1. Identify Sections
-  // Use `isVideoPageHero` if available, otherwise fallback to first video
   const heroVideo = videos.find(v => v.isVideoPageHero) || videos[0];
   
-  // Filter out the hero from the rest of the list
+  // Filter remaining videos
   const remainingVideos = videos.filter(v => v.id !== heroVideo.id);
+
+  // Apply Category Filter
+  const filteredVideos = filter === '全部' 
+    ? remainingVideos 
+    : remainingVideos.filter(v => v.category === filter || v.category?.includes(filter));
   
   // 2. Split for Accordion vs Bento
-  // Take top 8 for carousel
-  const carouselVideos = remainingVideos.slice(0, 8);
-  // Rest for Bento
-  const bentoVideos = remainingVideos.slice(8);
+  const carouselVideos = filteredVideos.slice(0, 8);
+  const bentoVideos = filteredVideos.slice(8);
 
   const handleWatch = (video: Video) => { 
       if (onPauseMusic) onPauseMusic(); 
@@ -161,7 +166,7 @@ export const VideoGrid: React.FC<VideoGridProps> = ({ videos, onPauseMusic }) =>
   return (
     <div className="w-full pb-24 -mt-24">
       {/* 1. CINEMA HERO (Full Screen) */}
-      <div className="relative w-full h-[90vh] mb-8 group overflow-hidden">
+      <div className="relative w-full h-[90vh] mb-0 group overflow-hidden">
           <div className="absolute inset-0 pointer-events-none">
               {heroVideo.videoUrl ? (
                   <video src={heroVideo.videoUrl} className="w-full h-full object-cover" autoPlay muted loop playsInline /> 
@@ -194,12 +199,12 @@ export const VideoGrid: React.FC<VideoGridProps> = ({ videos, onPauseMusic }) =>
               {/* Description & Meta */}
               <div className="flex flex-col md:flex-row gap-8 items-start max-w-4xl">
                    <p className="text-slate-200 text-lg md:text-xl font-light leading-relaxed border-l-4 border-cyan-500 pl-6 bg-black/30 backdrop-blur-sm p-4 rounded-r-xl">
-                       {heroVideo.description || "Experience the next generation of audio-visual synthesis. High fidelity playback engine enabled."}
+                       {heroVideo.description || "体验下一代视听合成技术。启用高保真播放引擎。"}
                    </p>
                    <div className="flex flex-col gap-1 text-xs font-mono text-slate-400 mt-2">
-                       <span>DIRECTOR: <span className="text-white">{heroVideo.author}</span></span>
-                       <span>RELEASE: <span className="text-white">2024</span></span>
-                       <span>QUALITY: <span className="text-acid">4K HDR</span></span>
+                       <span>导演: <span className="text-white">{heroVideo.author}</span></span>
+                       <span>上映: <span className="text-white">2024</span></span>
+                       <span>画质: <span className="text-acid">4K HDR</span></span>
                    </div>
               </div>
 
@@ -211,16 +216,35 @@ export const VideoGrid: React.FC<VideoGridProps> = ({ videos, onPauseMusic }) =>
                   >
                       <span className="relative z-10 flex items-center gap-3">
                           <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                          Start Playback
+                          开始播放
                       </span>
                       <div className="absolute inset-0 bg-cyan-400 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300 ease-out z-0"></div>
                   </button>
                   
                   <button className="px-8 py-5 border border-white/30 text-white font-bold text-sm uppercase tracking-widest rounded-full hover:bg-white/10 backdrop-blur-md transition-all">
-                      + Add to Watchlist
+                      + 加入待看
                   </button>
               </div>
           </div>
+      </div>
+
+      {/* CATEGORY NAV (Floating) */}
+      <div className="sticky top-20 z-40 px-4 md:px-12 py-4 -mt-20 mb-4 pointer-events-none">
+           <div className="inline-flex items-center gap-2 p-2 rounded-full bg-black/40 backdrop-blur-xl border border-white/10 shadow-2xl pointer-events-auto overflow-x-auto max-w-full hide-scrollbar">
+                {VIDEO_CATEGORIES.map(cat => (
+                    <button 
+                        key={cat}
+                        onClick={() => setFilter(cat)}
+                        className={`px-6 py-2 rounded-full text-xs font-bold uppercase tracking-widest whitespace-nowrap transition-all ${
+                            filter === cat 
+                            ? 'bg-white text-black shadow-lg scale-105' 
+                            : 'text-slate-400 hover:text-white hover:bg-white/10'
+                        }`}
+                    >
+                        {cat}
+                    </button>
+                ))}
+           </div>
       </div>
 
       {/* 2. INTERACTIVE SLIDER (Hover Wave) */}
