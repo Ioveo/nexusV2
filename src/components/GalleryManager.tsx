@@ -3,6 +3,7 @@
 import React, { useState, useRef } from 'react';
 import { GalleryImage } from '../types';
 import { storageService } from '../services/storageService';
+import { FileSelectorModal } from './Common';
 
 interface GalleryManagerProps {
   images: GalleryImage[];
@@ -11,10 +12,12 @@ interface GalleryManagerProps {
 
 export const GalleryManager: React.FC<GalleryManagerProps> = ({ images, onUpdate }) => {
   const [title, setTitle] = useState('');
-  const [sourceType, setSourceType] = useState<'upload' | 'link'>('upload');
+  const [sourceType, setSourceType] = useState<'upload' | 'link' | 'library'>('upload');
   const [inputValue, setInputValue] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [showFileSelector, setShowFileSelector] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handlePublish = async () => {
@@ -64,6 +67,16 @@ export const GalleryManager: React.FC<GalleryManagerProps> = ({ images, onUpdate
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
+      <FileSelectorModal 
+            isOpen={showFileSelector} 
+            onClose={() => setShowFileSelector(false)} 
+            filter="image"
+            onSelect={(url) => {
+                setInputValue(url);
+                setSourceType('library');
+            }}
+      />
+
       <div className="border-b border-white/10 pb-6">
           <h3 className="text-3xl font-display font-bold text-white mb-1">视觉画廊管理</h3>
           <p className="text-xs text-slate-500 font-mono">TOTAL ASSETS: {images.length}</p>
@@ -88,8 +101,9 @@ export const GalleryManager: React.FC<GalleryManagerProps> = ({ images, onUpdate
                     />
                 </div>
 
-                <div className="flex gap-4">
-                    <button onClick={() => setSourceType('upload')} className={`flex-1 py-3 rounded-xl text-xs font-bold uppercase transition-all ${sourceType === 'upload' ? 'bg-purple-600 text-white shadow-lg' : 'bg-white/5 text-slate-400 hover:bg-white/10'}`}>本地上传 (R2)</button>
+                <div className="flex gap-2">
+                    <button onClick={() => setSourceType('upload')} className={`flex-1 py-3 rounded-xl text-xs font-bold uppercase transition-all ${sourceType === 'upload' ? 'bg-purple-600 text-white shadow-lg' : 'bg-white/5 text-slate-400 hover:bg-white/10'}`}>本地上传</button>
+                    <button onClick={() => { setSourceType('library'); setShowFileSelector(true); }} className={`flex-1 py-3 rounded-xl text-xs font-bold uppercase transition-all ${sourceType === 'library' ? 'bg-purple-600 text-white shadow-lg' : 'bg-white/5 text-slate-400 hover:bg-white/10'}`}>R2 媒体库</button>
                     <button onClick={() => setSourceType('link')} className={`flex-1 py-3 rounded-xl text-xs font-bold uppercase transition-all ${sourceType === 'link' ? 'bg-purple-600 text-white shadow-lg' : 'bg-white/5 text-slate-400 hover:bg-white/10'}`}>外部链接</button>
                 </div>
             </div>
@@ -107,13 +121,18 @@ export const GalleryManager: React.FC<GalleryManagerProps> = ({ images, onUpdate
                             />
                         </div>
                     ) : (
-                        <input 
-                            type="text" 
-                            value={inputValue} 
-                            onChange={e => setInputValue(e.target.value)} 
-                            placeholder="https://example.com/image.jpg" 
-                            className="w-full bg-transparent text-center text-white outline-none font-mono text-sm placeholder-slate-600"
-                        />
+                        <div className="w-full space-y-2">
+                            <input 
+                                type="text" 
+                                value={inputValue} 
+                                onChange={e => setInputValue(e.target.value)} 
+                                placeholder={sourceType === 'library' ? "从媒体库选择..." : "https://example.com/image.jpg"}
+                                className="w-full bg-transparent text-center text-white outline-none font-mono text-sm placeholder-slate-600"
+                                readOnly={sourceType === 'library'}
+                                onClick={() => sourceType === 'library' && setShowFileSelector(true)}
+                            />
+                            {sourceType === 'library' && <div className="text-[10px] text-center text-slate-500">点击输入框重新选择</div>}
+                        </div>
                     )}
                 </div>
 
