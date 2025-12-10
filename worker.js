@@ -57,7 +57,6 @@ export default {
                 if (!env.SONIC_BUCKET) {
                     return new Response(JSON.stringify({ status: 'error', message: 'R2 Bucket NOT Bound' }), { headers: debugHeaders });
                 }
-                // Try listing 1 item to verify permission
                 await env.SONIC_BUCKET.list({ limit: 1 });
                 return new Response(JSON.stringify({ status: 'ok', message: 'R2 Connected' }), { headers: debugHeaders });
             } catch (e) {
@@ -117,7 +116,7 @@ export default {
             }
         }
 
-        // I. CATEGORIES (NEW)
+        // I. CATEGORIES
         if (url.pathname === '/api/categories') {
             if (request.method === 'GET') {
                 const data = await env.SONIC_KV.get('nexus_categories') || '[]';
@@ -130,13 +129,64 @@ export default {
             }
         }
 
-        // D. UPLOAD FILE
+        // --- D. MULTIPART UPLOAD (FOR LARGE FILES > 100MB) ---
+        
+        // D1. Initialize Multipart Upload
+        if (url.pathname === '/api/upload/mp/create' && request.method === 'POST') {
+            checkAuth();
+            const { filename, contentType } = await request.json();
+            if (!env.SONIC_BUCKET) return new Response('R2 Not Configured', { status: 500 });
+
+            const key = `${Date.now()}_${filename}`;
+            const multipartUpload = await env.SONIC_BUCKET.createMultipartUpload(key, {
+                httpMetadata: { contentType: contentType || 'application/octet-stream' }
+            });
+
+            return new Response(JSON.stringify({ 
+                uploadId: multipartUpload.uploadId, 
+                key: multipartUpload.key 
+            }), { headers: debugHeaders });
+        }
+
+        // D2. Upload Part (Chunk)
+        if (url.pathname === '/api/upload/mp/part' && request.method === 'PUT') {
+            checkAuth();
+            const uploadId = url.searchParams.get('uploadId');
+            const key = url.searchParams.get('key');
+            const partNumber = parseInt(url.searchParams.get('partNumber'));
+
+            if (!uploadId || !key || !partNumber) return new Response('Missing params', { status: 400 });
+
+            const multipartUpload = env.SONIC_BUCKET.resumeMultipartUpload(key, uploadId);
+            try {
+                const uploadedPart = await multipartUpload.uploadPart(partNumber, request.body);
+                return new Response(JSON.stringify({ etag: uploadedPart.etag }), { headers: debugHeaders });
+            } catch (e) {
+                return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: debugHeaders });
+            }
+        }
+
+        // D3. Complete Multipart Upload
+        if (url.pathname === '/api/upload/mp/complete' && request.method === 'POST') {
+            checkAuth();
+            const { uploadId, key, parts } = await request.json();
+            
+            const multipartUpload = env.SONIC_BUCKET.resumeMultipartUpload(key, uploadId);
+            try {
+                await multipartUpload.complete(parts);
+                const fileUrl = `/api/file/${key}`;
+                return new Response(JSON.stringify({ url: fileUrl }), { headers: debugHeaders });
+            } catch (e) {
+                return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: debugHeaders });
+            }
+        }
+
+        // D4. Legacy Simple Upload (Small files < 100MB optional fallback)
         if (url.pathname === '/api/upload' && request.method === 'PUT') {
           checkAuth();
           const key = url.searchParams.get('key');
           if (!key) return new Response('Missing key param', { status: 400, headers: corsHeaders });
 
-          // Note: Cloudflare Workers have a 100MB request body limit on standard plans.
           if (!env.SONIC_BUCKET) {
               return new Response(JSON.stringify({ error: "R2 Bucket Not Configured" }), { status: 500, headers: debugHeaders });
           }
@@ -154,7 +204,12 @@ export default {
           const key = url.pathname.split('/api/file/')[1];
           if (!env.SONIC_BUCKET) return new Response('R2 Not Configured', { status: 500 });
           
-          const object = await env.SONIC_BUCKET.get(key);
+          // Use Range request support if provided (important for video seeking)
+          const range = request.headers.get('range');
+          const object = await env.SONIC_BUCKET.get(key, {
+              range: range ? request.headers : undefined,
+              onlyIf: range ? request.headers : undefined,
+          });
 
           if (!object) {
             return new Response('Object Not Found', { status: 404, headers: corsHeaders });
@@ -164,8 +219,16 @@ export default {
           object.writeHttpMetadata(headers);
           headers.set('etag', object.httpEtag);
           headers.set('Access-Control-Allow-Origin', '*');
-          headers.set('Accept-Ranges', 'bytes'); 
           headers.set('Cache-Control', 'public, max-age=31536000');
+          
+          if (range) {
+              headers.set('content-range', `bytes ${object.range.offset}-${object.range.end}/${object.size}`);
+              headers.set('accept-ranges', 'bytes');
+              return new Response(object.body, { 
+                  headers, 
+                  status: 206 
+              });
+          }
 
           return new Response(object.body, { headers });
         }
