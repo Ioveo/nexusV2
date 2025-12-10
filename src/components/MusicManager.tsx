@@ -1,6 +1,6 @@
 // src/components/MusicManager.tsx
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { GalleryTrack } from '../types';
 import { storageService } from '../services/storageService';
 
@@ -26,16 +26,27 @@ export const MusicManager: React.FC<MusicManagerProps> = ({ tracks, onAdd, onDel
       title: '', artist: '', cover: '', sourceType: 'local' as GalleryTrack['sourceType'],
       inputValue: '', lyrics: '', audioFile: null as File | null, isHero: false, isUploading: false
   });
+  
+  // Progress & Status
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [r2Status, setR2Status] = useState<{ok: boolean, msg: string} | null>(null);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
   
   const [auditionId, setAuditionId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // Check R2 on mount
+  useEffect(() => {
+      storageService.checkR2Status().then(setR2Status);
+  }, []);
+
   const resetForm = () => {
       setState({ title: '', artist: '', cover: '', sourceType: 'local', inputValue: '', lyrics: '', audioFile: null, isHero: false, isUploading: false });
       setMode('create');
       setEditingId(null);
+      setUploadProgress(0);
       if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -59,19 +70,23 @@ export const MusicManager: React.FC<MusicManagerProps> = ({ tracks, onAdd, onDel
   const handleTrackPublish = async () => {
       if (!state.title || !state.artist) return alert("信息不完整");
       setState(p => ({ ...p, isUploading: true }));
+      setUploadProgress(0);
+
       try {
           let finalSrc = state.inputValue;
           
           if (state.sourceType === 'local') {
               if (state.audioFile) {
-                  finalSrc = await storageService.uploadFile(state.audioFile);
+                  finalSrc = await storageService.uploadFile(
+                      state.audioFile,
+                      (pct) => setUploadProgress(pct)
+                  );
               } else if (mode === 'create') {
                   throw new Error("请选择文件");
               } else {
                    finalSrc = tracks.find(t => t.id === editingId)?.src || '';
               }
           } else if (state.sourceType === 'netease') {
-              // Simple regex for Netease ID
               const match = state.inputValue.match(/id=(\d+)/) || state.inputValue.match(/\/song\/(\d+)/);
               if (match) finalSrc = match[1];
               else if (/^\d+$/.test(state.inputValue)) finalSrc = state.inputValue;
@@ -102,7 +117,7 @@ export const MusicManager: React.FC<MusicManagerProps> = ({ tracks, onAdd, onDel
           }
           resetForm();
       } catch (e: any) { alert(e.message); } 
-      finally { setState(p => ({ ...p, isUploading: false })); }
+      finally { setState(p => ({ ...p, isUploading: false })); setUploadProgress(0); }
   };
 
   const getAudioSrc = (track: GalleryTrack) => {
@@ -113,7 +128,15 @@ export const MusicManager: React.FC<MusicManagerProps> = ({ tracks, onAdd, onDel
   return (
     <div className="max-w-5xl space-y-8">
         <div className="flex justify-between items-center">
-            <h3 className="text-2xl font-bold hidden md:block">音乐管理 ({tracks.length})</h3>
+            <div className="flex items-center gap-4">
+                <h3 className="text-2xl font-bold hidden md:block">音乐管理 ({tracks.length})</h3>
+                {r2Status && (
+                  <div className={`px-2 py-1 rounded text-[10px] font-mono border flex items-center gap-1 ${r2Status.ok ? 'bg-lime-500/10 border-lime-500/30 text-lime-500' : 'bg-red-500/10 border-red-500/30 text-red-500'}`}>
+                      <div className={`w-1.5 h-1.5 rounded-full ${r2Status.ok ? 'bg-lime-500' : 'bg-red-500'}`}></div>
+                      R2: {r2Status.ok ? 'Ready' : r2Status.msg}
+                  </div>
+                )}
+            </div>
             {mode === 'edit' && (
                 <button onClick={resetForm} className="px-4 py-2 bg-slate-700 text-white rounded text-sm hover:bg-slate-600">
                     取消编辑
@@ -138,6 +161,7 @@ export const MusicManager: React.FC<MusicManagerProps> = ({ tracks, onAdd, onDel
             <div className="space-y-2">
                 <input type="file" ref={fileInputRef} onChange={e => e.target.files && setState({...state, audioFile: e.target.files[0]})} className="text-sm text-slate-400"/>
                 {mode === 'edit' && <p className="text-[10px] text-lime-400">若不选择新文件，将保留原音频。</p>}
+                <p className="text-[10px] text-slate-500">最大限制 100MB</p>
             </div> :
             <input type="text" placeholder="链接或ID" value={state.inputValue} onChange={e => setState({...state, inputValue: e.target.value})} className="w-full bg-black border border-white/10 p-3 rounded-lg text-white font-mono text-sm"/>
             }
@@ -171,8 +195,11 @@ export const MusicManager: React.FC<MusicManagerProps> = ({ tracks, onAdd, onDel
                 className="w-full h-32 bg-black border border-white/10 p-3 rounded-lg text-slate-300 font-mono text-xs resize-none"
             />
 
-            <button onClick={handleTrackPublish} disabled={state.isUploading} className={`w-full py-4 font-bold rounded-xl disabled:opacity-50 ${mode === 'edit' ? 'bg-lime-600 hover:bg-lime-500 text-white' : 'bg-lime-500 text-black hover:bg-lime-400'}`}>
-                {state.isUploading ? '处理中...' : (mode === 'edit' ? '保存修改' : '发布')}
+            <button onClick={handleTrackPublish} disabled={state.isUploading} className={`w-full py-4 font-bold rounded-xl disabled:opacity-50 relative overflow-hidden ${mode === 'edit' ? 'bg-lime-600 hover:bg-lime-500 text-white' : 'bg-lime-500 text-black hover:bg-lime-400'}`}>
+                <div className="relative z-10">{state.isUploading ? `Uploading... ${Math.round(uploadProgress)}%` : (mode === 'edit' ? '保存修改' : '发布')}</div>
+                {state.isUploading && (
+                    <div className="absolute top-0 left-0 h-full bg-black/20 transition-all duration-300 z-0" style={{ width: `${uploadProgress}%` }}></div>
+                )}
             </button>
         </div>
 
