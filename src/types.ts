@@ -59,7 +59,9 @@ export interface GalleryTrack {
   addedAt: number;
   lyrics?: string;
   categoryId?: string;
-  isHero?: boolean; 
+  isHero?: boolean;
+  album?: string;
+  duration?: string;
 }
 
 export interface Article {
