@@ -8,7 +8,8 @@
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, HEAD, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, x-admin-password',
+  'Access-Control-Allow-Headers': 'Content-Type, x-admin-password, Range', // Added Range support
+  'Access-Control-Expose-Headers': 'Content-Length, Content-Range, Accept-Ranges, ETag', // Expose headers for players
 };
 
 export default {
@@ -64,12 +65,11 @@ export default {
             }
         }
 
-        // K. LIST STORAGE FILES (NEW)
+        // K. LIST STORAGE FILES
         if (url.pathname === '/api/storage/list' && request.method === 'GET') {
             checkAuth();
             if (!env.SONIC_BUCKET) return new Response('R2 Not Configured', { status: 500 });
             
-            // Limit to recent 100 files for performance
             const options = {
                 limit: 100,
                 include: ['customMetadata', 'httpMetadata'],
@@ -77,7 +77,6 @@ export default {
             
             const listed = await env.SONIC_BUCKET.list(options);
             
-            // Transform for frontend
             const files = listed.objects.map(obj => ({
                 key: obj.key,
                 size: obj.size,
@@ -153,9 +152,9 @@ export default {
             }
         }
 
-        // --- D. MULTIPART UPLOAD (FOR LARGE FILES > 100MB) ---
+        // --- D. MULTIPART UPLOAD ---
         
-        // D1. Initialize Multipart Upload
+        // D1. Initialize
         if (url.pathname === '/api/upload/mp/create' && request.method === 'POST') {
             checkAuth();
             const { filename, contentType } = await request.json();
@@ -172,7 +171,7 @@ export default {
             }), { headers: debugHeaders });
         }
 
-        // D2. Upload Part (Chunk)
+        // D2. Part
         if (url.pathname === '/api/upload/mp/part' && request.method === 'PUT') {
             checkAuth();
             const uploadId = url.searchParams.get('uploadId');
@@ -190,7 +189,7 @@ export default {
             }
         }
 
-        // D3. Complete Multipart Upload
+        // D3. Complete
         if (url.pathname === '/api/upload/mp/complete' && request.method === 'POST') {
             checkAuth();
             const { uploadId, key, parts } = await request.json();
@@ -205,7 +204,7 @@ export default {
             }
         }
 
-        // D4. Legacy Simple Upload (Small files < 100MB optional fallback)
+        // D4. Simple Upload
         if (url.pathname === '/api/upload' && request.method === 'PUT') {
           checkAuth();
           const key = url.searchParams.get('key');
@@ -215,6 +214,7 @@ export default {
               return new Response(JSON.stringify({ error: "R2 Bucket Not Configured" }), { status: 500, headers: debugHeaders });
           }
 
+          // Ensure contentType is saved
           await env.SONIC_BUCKET.put(key, request.body, {
             httpMetadata: { contentType: request.headers.get('content-type') },
           });
@@ -223,13 +223,14 @@ export default {
           return new Response(JSON.stringify({ url: fileUrl }), { headers: debugHeaders });
         }
 
-        // E. GET FILE
+        // E. SERVE FILE (CRITICAL FIX FOR VIDEO/AUDIO PLAYBACK)
         if (url.pathname.startsWith('/api/file/')) {
           const key = url.pathname.split('/api/file/')[1];
           if (!env.SONIC_BUCKET) return new Response('R2 Not Configured', { status: 500 });
           
-          // Use Range request support if provided (important for video seeking)
           const range = request.headers.get('range');
+          
+          // Request from R2, passing Range if present
           const object = await env.SONIC_BUCKET.get(key, {
               range: range ? request.headers : undefined,
               onlyIf: range ? request.headers : undefined,
@@ -239,21 +240,40 @@ export default {
             return new Response('Object Not Found', { status: 404, headers: corsHeaders });
           }
 
-          const headers = new Headers(object.httpMetadata);
+          const headers = new Headers();
+          // Important: writeHttpMetadata copies Content-Type etc.
           object.writeHttpMetadata(headers);
-          headers.set('etag', object.httpEtag);
-          headers.set('Access-Control-Allow-Origin', '*');
-          headers.set('Cache-Control', 'public, max-age=31536000');
           
-          if (range) {
-              headers.set('content-range', `bytes ${object.range.offset}-${object.range.end}/${object.size}`);
-              headers.set('accept-ranges', 'bytes');
+          headers.set('etag', object.httpEtag);
+          // Crucial for streaming:
+          headers.set('Accept-Ranges', 'bytes');
+          // Standard CORS
+          Object.keys(corsHeaders).forEach(k => headers.set(k, corsHeaders[k]));
+          
+          // Cache settings
+          headers.set('Cache-Control', 'public, max-age=31536000');
+
+          if (range && object.range) {
+              // 206 Partial Content Response
+              // R2 returns the chunk size in object.size when a range is requested?? 
+              // NO, R2 object.size usually returns full size, but object.body is the stream.
+              // We must be careful with Content-Length.
+              
+              // Correct format: "bytes start-end/total"
+              const contentRange = `bytes ${object.range.offset}-${object.range.end}/${object.size}`;
+              headers.set('Content-Range', contentRange);
+              
+              // Correct Content-Length is the size of the CHUNK, not the whole file
+              const chunkLength = object.range.end - object.range.offset + 1;
+              headers.set('Content-Length', chunkLength.toString());
+              
               return new Response(object.body, { 
                   headers, 
                   status: 206 
               });
           }
 
+          // 200 OK Response (Full file)
           return new Response(object.body, { headers });
         }
         
