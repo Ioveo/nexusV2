@@ -25,7 +25,6 @@ export const VideoManager: React.FC<VideoManagerProps> = ({ videos, categories, 
       title: '', author: '', videoUrl: '', sourceType: 'local' as 'local' | 'external', categoryId: '', cover: '', description: '', isHero: false, adSlogan: '', isUploading: false
   });
   
-  // New States for Upload Status
   const [uploadProgress, setUploadProgress] = useState(0);
   const [r2Status, setR2Status] = useState<{ok: boolean, msg: string} | null>(null);
 
@@ -34,7 +33,6 @@ export const VideoManager: React.FC<VideoManagerProps> = ({ videos, categories, 
 
   const videoCats = categories.filter(c => c.type === 'video');
 
-  // Check R2 on mount
   useEffect(() => {
       storageService.checkR2Status().then(setR2Status);
   }, []);
@@ -74,7 +72,6 @@ export const VideoManager: React.FC<VideoManagerProps> = ({ videos, categories, 
           
           if (state.sourceType === 'local') {
               if (videoInputRef.current?.files?.[0]) {
-                  // Use uploadFile with progress callback
                   finalVideoUrl = await storageService.uploadFile(
                       videoInputRef.current.files[0], 
                       (pct) => setUploadProgress(pct)
@@ -149,7 +146,6 @@ export const VideoManager: React.FC<VideoManagerProps> = ({ videos, categories, 
       <div className="flex justify-between items-center">
           <div className="flex items-center gap-4">
               <h3 className="text-2xl font-bold">视频管理 ({videos.length})</h3>
-              {/* R2 Status Indicator */}
               {r2Status && (
                   <div className={`px-2 py-1 rounded text-[10px] font-mono border flex items-center gap-1 ${r2Status.ok ? 'bg-lime-500/10 border-lime-500/30 text-lime-500' : 'bg-red-500/10 border-red-500/30 text-red-500'}`}>
                       <div className={`w-1.5 h-1.5 rounded-full ${r2Status.ok ? 'bg-lime-500' : 'bg-red-500'}`}></div>
@@ -191,7 +187,7 @@ export const VideoManager: React.FC<VideoManagerProps> = ({ videos, categories, 
           {state.sourceType === 'local' ? (
               <div className="space-y-2">
                   <input type="file" ref={videoInputRef} accept="video/*" className="w-full text-slate-400 text-sm"/>
-                  <p className="text-[10px] text-slate-500">注意：Cloudflare Worker 限制最大上传 100MB。大文件请使用外部链接。</p>
+                  <p className="text-[10px] text-slate-500">支持超大文件分片上传 (无 100MB 限制)</p>
               </div>
           ) : (
               <input type="text" placeholder="MP4 URL..." value={state.videoUrl} onChange={e => setState({...state, videoUrl: e.target.value})} className="w-full bg-black border border-white/20 p-3 rounded text-white font-mono text-sm"/>
@@ -225,11 +221,10 @@ export const VideoManager: React.FC<VideoManagerProps> = ({ videos, categories, 
           <button onClick={handleSubmit} disabled={state.isUploading} className="w-full py-3 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden">
               {state.isUploading ? (
                   <div className="relative z-10 flex items-center justify-center gap-2">
-                      <span>Uploading... {Math.round(uploadProgress)}%</span>
+                      <span>上传中... {Math.round(uploadProgress)}%</span>
                   </div>
               ) : (mode === 'edit' ? '保存修改' : '发布视频')}
               
-              {/* Progress Bar Background */}
               {state.isUploading && (
                   <div 
                     className="absolute top-0 left-0 h-full bg-orange-700/50 transition-all duration-300 z-0" 
