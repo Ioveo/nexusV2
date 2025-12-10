@@ -8,8 +8,8 @@
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, HEAD, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, x-admin-password, Range', // Added Range support
-  'Access-Control-Expose-Headers': 'Content-Length, Content-Range, Accept-Ranges, ETag', // Expose headers for players
+  'Access-Control-Allow-Headers': 'Content-Type, x-admin-password, Range',
+  'Access-Control-Expose-Headers': 'Content-Length, Content-Range, Accept-Ranges, ETag',
 };
 
 export default {
@@ -223,17 +223,19 @@ export default {
           return new Response(JSON.stringify({ url: fileUrl }), { headers: debugHeaders });
         }
 
-        // E. SERVE FILE (CRITICAL FIX FOR VIDEO/AUDIO PLAYBACK)
+        // E. SERVE FILE (ROBUST STREAMING FIX)
         if (url.pathname.startsWith('/api/file/')) {
           const key = url.pathname.split('/api/file/')[1];
           if (!env.SONIC_BUCKET) return new Response('R2 Not Configured', { status: 500 });
           
-          const range = request.headers.get('range');
+          const rangeHeader = request.headers.get('range');
           
-          // Request from R2, passing Range if present
+          // Request from R2
+          // Note: R2 `get` behavior with `range` returns the specific chunk in `object.body`.
+          // `object.size` returns the FULL object size.
           const object = await env.SONIC_BUCKET.get(key, {
-              range: range ? request.headers : undefined,
-              onlyIf: range ? request.headers : undefined,
+              range: rangeHeader ? request.headers : undefined,
+              onlyIf: rangeHeader ? request.headers : undefined,
           });
 
           if (!object) {
@@ -241,30 +243,27 @@ export default {
           }
 
           const headers = new Headers();
-          // Important: writeHttpMetadata copies Content-Type etc.
+          // Copy metadata (Content-Type)
           object.writeHttpMetadata(headers);
           
           headers.set('etag', object.httpEtag);
-          // Crucial for streaming:
-          headers.set('Accept-Ranges', 'bytes');
-          // Standard CORS
-          Object.keys(corsHeaders).forEach(k => headers.set(k, corsHeaders[k]));
+          headers.set('Accept-Ranges', 'bytes'); // Critical for streaming
           
-          // Cache settings
+          // CORS
+          Object.keys(corsHeaders).forEach(k => headers.set(k, corsHeaders[k]));
           headers.set('Cache-Control', 'public, max-age=31536000');
 
-          if (range && object.range) {
-              // 206 Partial Content Response
-              // R2 returns the chunk size in object.size when a range is requested?? 
-              // NO, R2 object.size usually returns full size, but object.body is the stream.
-              // We must be careful with Content-Length.
+          // Handle Range Response (206)
+          if (rangeHeader && object.range) {
+              const start = object.range.offset;
+              const end = object.range.end;
+              const total = object.size;
               
               // Correct format: "bytes start-end/total"
-              const contentRange = `bytes ${object.range.offset}-${object.range.end}/${object.size}`;
-              headers.set('Content-Range', contentRange);
+              headers.set('Content-Range', `bytes ${start}-${end}/${total}`);
               
-              // Correct Content-Length is the size of the CHUNK, not the whole file
-              const chunkLength = object.range.end - object.range.offset + 1;
+              // Correct Content-Length is the size of the CHUNK sent
+              const chunkLength = end - start + 1;
               headers.set('Content-Length', chunkLength.toString());
               
               return new Response(object.body, { 
@@ -273,8 +272,9 @@ export default {
               });
           }
 
-          // 200 OK Response (Full file)
-          return new Response(object.body, { headers });
+          // Handle Full Response (200)
+          headers.set('Content-Length', object.size.toString());
+          return new Response(object.body, { headers, status: 200 });
         }
         
         // F. DELETE FILE
