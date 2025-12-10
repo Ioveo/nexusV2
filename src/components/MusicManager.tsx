@@ -29,7 +29,7 @@ export const MusicManager: React.FC<MusicManagerProps> = ({ tracks, onAdd, onDel
   });
   
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [r2Status, setR2Status] = useState<{ok: boolean, msg: string} | null>(null);
+  const [r2Status, setR2Status] = useState<{ok: boolean, message: string} | null>(null);
   const [showFileSelector, setShowFileSelector] = useState(false); // New state
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -130,6 +130,13 @@ export const MusicManager: React.FC<MusicManagerProps> = ({ tracks, onAdd, onDel
       return track.src;
   }
 
+  // Helper to format path display
+  const formatPathDisplay = (path: string) => {
+      if (!path) return '';
+      if (path.startsWith('/api/file/')) return 'Audio Resource Ready (R2)';
+      return path;
+  };
+
   return (
     <div className="max-w-5xl space-y-8">
         <FileSelectorModal 
@@ -145,7 +152,7 @@ export const MusicManager: React.FC<MusicManagerProps> = ({ tracks, onAdd, onDel
                 {r2Status && (
                   <div className={`px-2 py-1 rounded text-[10px] font-mono border flex items-center gap-1 ${r2Status.ok ? 'bg-lime-500/10 border-lime-500/30 text-lime-500' : 'bg-red-500/10 border-red-500/30 text-red-500'}`}>
                       <div className={`w-1.5 h-1.5 rounded-full ${r2Status.ok ? 'bg-lime-500' : 'bg-red-500'}`}></div>
-                      R2: {r2Status.ok ? 'Ready' : r2Status.msg}
+                      R2: {r2Status.ok ? 'Ready' : r2Status.message}
                   </div>
                 )}
             </div>
@@ -183,7 +190,7 @@ export const MusicManager: React.FC<MusicManagerProps> = ({ tracks, onAdd, onDel
                     </div>
                 </div>
                 {state.inputValue && !state.audioFile && (
-                    <p className="text-xs text-lime-400 mt-2 truncate">已选择: {state.inputValue}</p>
+                    <p className="text-xs text-lime-400 mt-2 truncate">资源就绪: {formatPathDisplay(state.inputValue)}</p>
                 )}
                 {mode === 'edit' && !state.inputValue && !state.audioFile && <p className="text-[10px] text-lime-400">保留原音频</p>}
             </div> :
