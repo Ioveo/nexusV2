@@ -51,6 +51,20 @@ export default {
           }), { headers: debugHeaders });
         }
 
+        // J. HEALTH CHECK (R2 Status)
+        if (url.pathname === '/api/health-check' && request.method === 'GET') {
+            try {
+                if (!env.SONIC_BUCKET) {
+                    return new Response(JSON.stringify({ status: 'error', message: 'R2 Bucket NOT Bound' }), { headers: debugHeaders });
+                }
+                // Try listing 1 item to verify permission
+                await env.SONIC_BUCKET.list({ limit: 1 });
+                return new Response(JSON.stringify({ status: 'ok', message: 'R2 Connected' }), { headers: debugHeaders });
+            } catch (e) {
+                return new Response(JSON.stringify({ status: 'error', message: e.message }), { headers: debugHeaders });
+            }
+        }
+
         // A. TRACKS
         if (url.pathname === '/api/tracks') {
             if (request.method === 'GET') {
@@ -122,6 +136,11 @@ export default {
           const key = url.searchParams.get('key');
           if (!key) return new Response('Missing key param', { status: 400, headers: corsHeaders });
 
+          // Note: Cloudflare Workers have a 100MB request body limit on standard plans.
+          if (!env.SONIC_BUCKET) {
+              return new Response(JSON.stringify({ error: "R2 Bucket Not Configured" }), { status: 500, headers: debugHeaders });
+          }
+
           await env.SONIC_BUCKET.put(key, request.body, {
             httpMetadata: { contentType: request.headers.get('content-type') },
           });
@@ -133,6 +152,8 @@ export default {
         // E. GET FILE
         if (url.pathname.startsWith('/api/file/')) {
           const key = url.pathname.split('/api/file/')[1];
+          if (!env.SONIC_BUCKET) return new Response('R2 Not Configured', { status: 500 });
+          
           const object = await env.SONIC_BUCKET.get(key);
 
           if (!object) {
@@ -152,6 +173,7 @@ export default {
         // F. DELETE FILE
          if (url.pathname.startsWith('/api/delete-file/') && request.method === 'DELETE') {
              checkAuth();
+             if (!env.SONIC_BUCKET) return new Response('R2 Not Configured', { status: 500 });
              const key = url.pathname.split('/api/delete-file/')[1];
              await env.SONIC_BUCKET.delete(key);
              return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
