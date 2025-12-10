@@ -96,8 +96,9 @@ export interface Video {
   categoryId?: string;
   addedAt: number;
   description?: string;
-  isHero?: boolean;
-  adSlogan?: string; // NEW: Advertising Slogan
+  isHero?: boolean; // Global Home Page Hero
+  isVideoPageHero?: boolean; // Video Hub Page Hero
+  adSlogan?: string;
 }
 
 export interface Category {
