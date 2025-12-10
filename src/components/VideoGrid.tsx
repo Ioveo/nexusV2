@@ -1,319 +1,227 @@
 
-// src/components/MusicGrid.tsx
+import React, { useState } from 'react';
+import { Video } from '../types';
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { GalleryTrack } from '../types';
+interface VideoGridProps {
+  videos: Video[];
+  onPauseMusic?: () => void;
+}
 
-// --- UTILS ---
+// Map categories to icons
+const CATEGORY_ITEMS = [
+    { name: '全部', icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg> },
+    { name: '电影', icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" /></svg> },
+    { name: 'MV', icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" /></svg> },
+    { name: '纪录片', icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg> },
+    { name: '动画', icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> },
+    { name: '科幻', icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> },
+    { name: '创意', icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg> },
+];
 
-const formatTime = (seconds: number) => {
-    const min = Math.floor(seconds / 60);
-    const sec = Math.floor(seconds % 60);
-    return `${min}:${sec.toString().padStart(2, '0')}`;
+// --- SUB-COMPONENTS ---
+
+const CustomVideoPlayer = ({ video, onClose }: { video: Video, onClose: () => void }) => {
+    return (
+        <div className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-xl flex flex-col justify-center animate-fade-in">
+            <button onClick={onClose} className="absolute top-6 right-6 z-50 text-white bg-white/10 hover:bg-white/20 p-3 rounded-full transition-colors">✕</button>
+            <video src={video.videoUrl} controls autoPlay className="w-full h-full object-contain max-h-[100vh] shadow-2xl" />
+        </div>
+    );
 };
 
-const getRandomDuration = (id: string) => {
-    const seed = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const totalSec = 150 + (seed % 120); 
-    return formatTime(totalSec);
-};
-
-const PlayIcon = () => (
-    <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-);
-
-const PauseIcon = () => (
-    <div className="flex gap-1 h-5 items-center justify-center">
-        <div className="w-1.5 h-4 bg-current"></div>
-        <div className="w-1.5 h-4 bg-current"></div>
-    </div>
-);
-
-// --- NEW COMPONENTS FOR MUSIC GRID ---
-
-// 1. HERO CAROUSEL
-const HeroCarousel = ({ tracks, onPlay, playingId }: { tracks: GalleryTrack[], onPlay: (id: string) => void, playingId: string | null }) => {
-    const [currentIndex, setCurrentIndex] = useState(0);
-    const [isHovered, setIsHovered] = useState(false);
-
-    // Auto rotate
-    useEffect(() => {
-        if (isHovered) return;
-        const interval = setInterval(() => {
-            setCurrentIndex(prev => (prev + 1) % tracks.length);
-        }, 6000);
-        return () => clearInterval(interval);
-    }, [tracks.length, isHovered]);
-
-    const currentTrack = tracks[currentIndex];
-    const isPlaying = playingId === currentTrack.id;
-
-    const handleNext = (e?: React.MouseEvent) => {
-        e?.stopPropagation();
-        setCurrentIndex(prev => (prev + 1) % tracks.length);
-    };
-
-    const handlePrev = (e?: React.MouseEvent) => {
-        e?.stopPropagation();
-        setCurrentIndex(prev => (prev - 1 + tracks.length) % tracks.length);
-    };
+// 2. INTERACTIVE ACCORDION CAROUSEL (Wave Effect)
+const InteractiveCarousel = ({ videos, onWatch }: { videos: Video[], onWatch: (v: Video) => void }) => {
+    if (videos.length === 0) return null;
+    const displayVideos = videos.slice(0, 8);
 
     return (
-        <div 
-            className="relative w-full h-[85vh] min-h-[600px] mb-12 overflow-hidden group"
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-        >
-            {/* Background Layers */}
-            {tracks.map((track, idx) => (
-                <div 
-                    key={track.id}
-                    className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${idx === currentIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
-                >
-                    <img src={track.coverUrl} className="w-full h-full object-cover blur-[0px]" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/40 to-transparent"></div>
-                    <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/20 to-transparent"></div>
-                </div>
-            ))}
-
-            {/* Content Content */}
-            <div className="absolute inset-0 z-20 flex flex-col justify-end p-8 md:p-16 lg:p-24 pb-32 max-w-[1600px] mx-auto w-full">
-                <div className="transition-all duration-700 transform translate-y-0 opacity-100">
-                    <div className="flex items-center gap-3 mb-6">
-                        <span className="px-3 py-1 bg-white/10 backdrop-blur border border-white/20 text-acid text-[10px] font-black uppercase tracking-[0.2em] rounded">
-                            Featured
-                        </span>
-                        <div className="flex gap-1">
-                            {tracks.map((_, idx) => (
-                                <div key={idx} className={`w-8 h-1 rounded-full transition-colors ${idx === currentIndex ? 'bg-acid' : 'bg-white/20'}`}></div>
-                            ))}
-                        </div>
-                    </div>
-
-                    <h1 className="text-6xl md:text-8xl lg:text-9xl font-display font-black text-white leading-[0.85] tracking-tighter drop-shadow-2xl mb-8 max-w-4xl line-clamp-2">
-                        {currentTrack.title}
-                    </h1>
-
-                    <div className="flex items-center gap-6 mb-12">
-                        <div className="flex -space-x-4">
-                            <img src={currentTrack.coverUrl} className="w-12 h-12 rounded-full border-2 border-black object-cover" />
-                            <div className="w-12 h-12 rounded-full border-2 border-black bg-white/10 backdrop-blur flex items-center justify-center text-[10px] font-bold">
-                                {currentTrack.sourceType === 'local' ? 'HIFI' : 'WEB'}
-                            </div>
-                        </div>
-                        <div className="text-2xl text-white font-light tracking-wide">{currentTrack.artist}</div>
-                    </div>
-
-                    <div className="flex items-center gap-6">
-                        <button 
-                            onClick={() => onPlay(currentTrack.id)} 
-                            className={`group relative px-10 py-5 font-bold text-lg uppercase tracking-widest rounded-full flex items-center gap-4 transition-all shadow-2xl hover:scale-105 overflow-hidden ${isPlaying ? 'bg-acid text-black' : 'bg-white text-black'}`}
-                        >
-                            <span className="relative z-10 flex items-center gap-3">
-                                {isPlaying ? <PauseIcon /> : <PlayIcon />}
-                                <span>{isPlaying ? 'PAUSE' : 'PLAY NOW'}</span>
-                            </span>
-                            {/* Shine effect */}
-                            <div className="absolute inset-0 bg-white/50 transform -translate-x-full group-hover:translate-x-full transition-transform duration-500 ease-out z-0 skew-x-12"></div>
-                        </button>
-                        
-                        <button onClick={handleNext} className="w-14 h-14 rounded-full border border-white/20 flex items-center justify-center hover:bg-white/10 hover:border-white text-white transition-all backdrop-blur-md">
-                            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                        </button>
-                    </div>
-                </div>
+        <div className="w-full py-12 px-4 md:px-12">
+            <div className="flex items-center gap-3 mb-8">
+                <div className="w-1 h-6 bg-cyan-500 shadow-[0_0_10px_#06b6d4]"></div>
+                <h3 className="text-2xl font-display font-bold text-white uppercase tracking-wider">热门推荐</h3>
             </div>
-
-            {/* Right Side Navigation (Hidden on mobile) */}
-            <div className="absolute right-12 top-1/2 -translate-y-1/2 z-30 hidden lg:flex flex-col gap-4">
-                {tracks.map((t, idx) => (
-                    <button 
-                        key={t.id}
-                        onClick={() => setCurrentIndex(idx)}
-                        className={`w-16 h-24 rounded-lg border overflow-hidden transition-all duration-300 relative group ${idx === currentIndex ? 'border-acid scale-110 shadow-[0_0_20px_#ccff0080]' : 'border-white/20 opacity-50 hover:opacity-100 hover:scale-105'}`}
+            
+            <div className="flex w-full h-[300px] md:h-[400px] gap-2 md:gap-4 overflow-hidden">
+                {displayVideos.map((video, idx) => (
+                    <div 
+                        key={video.id} 
+                        onClick={() => onWatch(video)}
+                        className="relative flex-1 group cursor-pointer overflow-hidden rounded-2xl transition-all duration-500 ease-out hover:flex-[4] hover:shadow-[0_0_30px_rgba(6,182,212,0.3)] border border-white/5 hover:border-cyan-500/50"
                     >
-                        <img src={t.coverUrl} className="w-full h-full object-cover" />
-                        {idx === currentIndex && <div className="absolute inset-0 bg-acid/20"></div>}
-                    </button>
+                        <img src={video.coverUrl} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-60 group-hover:opacity-100" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80 group-hover:opacity-40 transition-opacity"></div>
+                        
+                        <div className="absolute bottom-0 left-0 w-full p-4 md:p-6 translate-y-full group-hover:translate-y-0 transition-transform duration-500 flex flex-col justify-end bg-gradient-to-t from-black/90 to-transparent h-1/2">
+                            <span className="text-cyan-400 font-mono text-[10px] uppercase tracking-widest mb-1 truncate">{video.category}</span>
+                            <h4 className="text-white font-bold text-lg md:text-3xl leading-none mb-2 line-clamp-2">{video.title}</h4>
+                            <p className="text-slate-300 text-xs line-clamp-2 opacity-0 group-hover:opacity-100 transition-opacity delay-100 duration-500">{video.description || "立即观看 4K 超清版本。"}</p>
+                        </div>
+
+                        <div className="absolute top-4 left-4 font-display font-black text-2xl md:text-4xl text-white/10 group-hover:text-cyan-500 group-hover:scale-150 transition-all duration-500">
+                            {(idx + 1).toString().padStart(2, '0')}
+                        </div>
+                    </div>
                 ))}
             </div>
         </div>
     );
 };
 
-// 2. PERSPECTIVE CARDS (3D Tilt for Trending)
-const PerspectiveRow = ({ tracks, onPlay, playingId }: { tracks: GalleryTrack[], onPlay: (id: string) => void, playingId: string | null }) => (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {tracks.slice(0, 3).map((track, i) => {
-            const isPlaying = playingId === track.id;
-            return (
-                <div 
-                    key={track.id} 
-                    onClick={() => onPlay(track.id)}
-                    className="group relative h-72 rounded-3xl cursor-pointer transition-all duration-500 hover:scale-[1.02] hover:-translate-y-2 perspective-1000"
-                >
-                    <div className="absolute inset-0 rounded-3xl overflow-hidden border border-white/5 group-hover:border-acid/50 transition-colors shadow-2xl bg-[#111]">
-                        <img src={track.coverUrl} className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity duration-500" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent"></div>
-                        
-                        <div className="absolute bottom-0 left-0 p-8 w-full">
-                            <div className="flex items-center gap-2 mb-2">
-                                <span className="text-acid font-mono text-[10px] uppercase tracking-widest">#{i + 1} Trending</span>
-                            </div>
-                            <h3 className="text-3xl font-display font-bold text-white mb-1 truncate">{track.title}</h3>
-                            <p className="text-sm text-slate-300">{track.artist}</p>
-                        </div>
-                        
-                        {/* Play Overlay */}
-                        <div className={`absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${isPlaying ? 'opacity-100' : ''}`}>
-                            <div className={`w-20 h-20 rounded-full flex items-center justify-center shadow-2xl transition-transform duration-300 group-hover:scale-110 ${isPlaying ? 'bg-acid text-black' : 'bg-white text-black'}`}>
-                                {isPlaying ? <PauseIcon /> : <PlayIcon />}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            );
-        })}
-    </div>
-);
-
-// 3. NEON LIST (New Arrivals)
-const NeonList = ({ tracks, onPlay, playingId }: { tracks: GalleryTrack[], onPlay: (id: string) => void, playingId: string | null }) => (
-    <div className="flex flex-col gap-3">
-        {tracks.slice(0, 6).map((track, idx) => {
-            const isPlaying = playingId === track.id;
-            return (
-                <div 
-                    key={track.id} 
-                    onClick={() => onPlay(track.id)}
-                    className={`flex items-center gap-4 p-4 rounded-xl border transition-all duration-300 cursor-pointer group hover:scale-[1.01] ${isPlaying ? 'bg-white/10 border-acid/50' : 'bg-[#0a0a0a] border-white/5 hover:bg-white/5 hover:border-white/20'}`}
-                >
-                    <div className={`w-6 text-center font-display font-bold text-lg ${idx < 3 ? 'text-acid' : 'text-slate-600'}`}>{(idx + 1).toString().padStart(2, '0')}</div>
-                    <div className="relative w-14 h-14 rounded-lg overflow-hidden shrink-0 shadow-lg">
-                        <img src={track.coverUrl} className="w-full h-full object-cover" />
-                        {isPlaying && <div className="absolute inset-0 bg-acid/80 flex items-center justify-center text-black"><PauseIcon /></div>}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                        <h4 className={`font-bold text-base truncate ${isPlaying ? 'text-acid' : 'text-white'}`}>{track.title}</h4>
-                        <div className="text-xs text-slate-500 truncate">{track.artist}</div>
-                    </div>
-                    <div className="text-xs font-mono text-slate-600 group-hover:text-white transition-colors">{getRandomDuration(track.id)}</div>
-                </div>
-            );
-        })}
-    </div>
-);
-
-// 4. WIDE SWIMLANE (For You)
-const SwimlaneRow = ({ tracks, onPlay, playingId }: { tracks: GalleryTrack[], onPlay: (id: string) => void, playingId: string | null }) => (
-    <div className="flex gap-8 overflow-x-auto pb-8 hide-scrollbar snap-x">
-        {tracks.map(track => {
-            const isPlaying = playingId === track.id;
-            return (
-                <div 
-                    key={track.id} 
-                    onClick={() => onPlay(track.id)}
-                    className="flex-none w-[240px] snap-start group cursor-pointer"
-                >
-                    <div className={`relative aspect-square rounded-3xl overflow-hidden mb-5 border transition-all duration-300 ${isPlaying ? 'border-acid shadow-[0_0_30px_rgba(204,255,0,0.2)] scale-105' : 'border-white/5 hover:border-white/30 hover:scale-105'}`}>
-                        <img src={track.coverUrl} className="w-full h-full object-cover" />
-                        <div className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity duration-300 ${isPlaying ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                             <div className={`w-14 h-14 rounded-full flex items-center justify-center backdrop-blur-md shadow-xl ${isPlaying ? 'bg-acid text-black' : 'bg-white/20 text-white hover:bg-white hover:text-black'}`}>
-                                {isPlaying ? <PauseIcon /> : <PlayIcon />}
-                            </div>
-                        </div>
-                    </div>
-                    <div>
-                        <h4 className={`font-bold text-lg truncate mb-1 ${isPlaying ? 'text-acid' : 'text-white'}`}>{track.title}</h4>
-                        <div className="text-sm text-slate-500">{track.artist}</div>
-                    </div>
-                </div>
-            );
-        })}
-    </div>
-);
-
-// --- MAIN MUSIC GRID COMPONENT ---
-export const MusicGrid: React.FC<{ tracks: GalleryTrack[], onPlay: (id:string)=>void, playingId: string|null }> = ({ tracks, onPlay, playingId }) => {
-    
-    // 1. MEMOIZE LISTS TO PREVENT JUMPING
-    const { heroTracks, newArrivals, trending, forYou } = useMemo(() => {
-        if (tracks.length === 0) return { heroTracks: [], newArrivals: [], trending: [], forYou: [] };
-        
-        const sortedByDate = [...tracks].sort((a, b) => b.addedAt - a.addedAt);
-        const hero = tracks.filter(t => t.isHero);
-        
-        // If no hero tracks, take top 5 newest as hero
-        const finalHero = hero.length > 0 ? hero : sortedByDate.slice(0, 5);
-        
-        // Pseudo-random sort that stays stable until tracks change
-        const shuffle = [...tracks].sort((a, b) => {
-            const valA = a.id.charCodeAt(0) + a.title.length;
-            const valB = b.id.charCodeAt(0) + b.title.length;
-            return valA - valB;
-        });
-
-        return {
-            heroTracks: finalHero,
-            newArrivals: sortedByDate.slice(0, 10),
-            trending: shuffle.slice(0, 6), // Top 6 trending
-            forYou: shuffle.slice(6, 16)   // Next 10 for you
-        };
-    }, [tracks]);
-
-    if (tracks.length === 0) return (
-        <div className="flex items-center justify-center h-[50vh] text-slate-500 font-mono flex-col gap-4">
-            <div className="w-16 h-16 border-2 border-slate-700 rounded-full flex items-center justify-center text-3xl">?</div>
-            <p>暂无音频档案 (NO AUDIO ARCHIVES)</p>
-        </div>
-    );
+// 3. BENTO GRID
+const BentoVideoGrid = ({ videos, onWatch }: { videos: Video[], onWatch: (v: Video) => void }) => {
+    if (videos.length === 0) return null;
 
     return (
-        <div className="w-full pb-32 -mt-24">
-            
-            {/* 1. HERO CAROUSEL */}
-            <HeroCarousel tracks={heroTracks} onPlay={onPlay} playingId={playingId} />
+        <div className="w-full py-12 px-4 md:px-12 bg-gradient-to-t from-[#050505] to-transparent">
+             <div className="flex items-center gap-3 mb-8">
+                <div className="w-1 h-6 bg-purple-500 shadow-[0_0_10px_#a855f7]"></div>
+                <h3 className="text-2xl font-display font-bold text-white uppercase tracking-wider">精选片单</h3>
+            </div>
 
-            {/* 2. CONTENT SECTIONS */}
-            <div className="relative z-20 max-w-[1600px] mx-auto px-4 md:px-12 space-y-24">
-                
-                {/* Section A: Trending & New Arrivals Split */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-16">
-                    {/* Trending (2/3) */}
-                    <div className="lg:col-span-2">
-                         <div className="flex items-end justify-between mb-10 pb-4 border-b border-white/10">
-                            <div>
-                                <h2 className="text-4xl font-display font-black text-white uppercase tracking-tight">时下流行 <span className="text-acid">///</span></h2>
-                                <p className="text-xs font-mono text-slate-500 mt-2 tracking-widest">GLOBAL TRENDS ANALYTICS</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 auto-rows-[250px] gap-4">
+                {videos.map((video, idx) => {
+                    let colSpan = "col-span-1";
+                    let rowSpan = "row-span-1";
+                    if (idx === 0) { colSpan = "md:col-span-2"; rowSpan = "md:row-span-2"; }
+                    else if (idx === 3) { colSpan = "md:col-span-2"; }
+                    else if (idx === 6) { rowSpan = "md:row-span-2"; }
+
+                    return (
+                        <div 
+                            key={video.id} 
+                            onClick={() => onWatch(video)}
+                            className={`relative group cursor-pointer overflow-hidden rounded-2xl border border-white/5 bg-[#111] hover:border-purple-500/50 transition-all duration-300 hover:z-10 hover:shadow-2xl ${colSpan} ${rowSpan}`}
+                        >
+                            <img src={video.coverUrl} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-70 group-hover:opacity-100" />
+                            <div className="absolute inset-0 bg-black/40 group-hover:bg-transparent transition-colors duration-300"></div>
+                            
+                            <div className="absolute inset-0 p-6 flex flex-col justify-end items-start opacity-100">
+                                <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 w-full">
+                                    {video.adSlogan && (
+                                        <span className="inline-block px-2 py-1 bg-purple-500 text-black text-[9px] font-bold uppercase mb-2 rounded shadow-lg">
+                                            {video.adSlogan}
+                                        </span>
+                                    )}
+                                    <h4 className={`font-bold text-white leading-tight mb-1 truncate ${rowSpan.includes('2') || colSpan.includes('2') ? 'text-2xl' : 'text-lg'}`}>
+                                        {video.title}
+                                    </h4>
+                                    <div className="flex items-center gap-2 text-xs text-slate-400 group-hover:text-white transition-colors">
+                                        <span className="truncate max-w-[100px]">{video.author}</span>
+                                        <span className="w-1 h-1 bg-slate-500 rounded-full"></span>
+                                        <span>{video.category}</span>
+                                    </div>
+                                </div>
                             </div>
-                         </div>
-                         <PerspectiveRow tracks={trending} onPlay={onPlay} playingId={playingId} />
-                    </div>
-
-                    {/* New Arrivals (1/3) */}
-                    <div className="lg:col-span-1">
-                        <div className="flex items-end justify-between mb-10 pb-4 border-b border-white/10">
-                            <div>
-                                <h2 className="text-4xl font-display font-black text-white uppercase tracking-tight">最新上架</h2>
-                                <p className="text-xs font-mono text-slate-500 mt-2 tracking-widest">JUST ARRIVED</p>
+                            
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-white/10 backdrop-blur rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 scale-50 group-hover:scale-100">
+                                <div className="w-0 h-0 border-t-[10px] border-t-transparent border-l-[18px] border-l-white border-b-[10px] border-b-transparent ml-1"></div>
                             </div>
-                         </div>
-                         <NeonList tracks={newArrivals} onPlay={onPlay} playingId={playingId} />
-                    </div>
-                </div>
-
-                {/* Section B: For You (Wide Slider) */}
-                <div>
-                     <div className="flex items-end justify-between mb-10 pb-4 border-b border-white/10">
-                        <div>
-                            <h2 className="text-4xl font-display font-black text-white uppercase tracking-tight">为您推荐 <span className="text-purple-500">///</span></h2>
-                            <p className="text-xs font-mono text-slate-500 mt-2 tracking-widest">ALGORITHMIC CURATION</p>
                         </div>
-                     </div>
-                     <SwimlaneRow tracks={forYou} onPlay={onPlay} playingId={playingId} />
-                </div>
-
+                    );
+                })}
             </div>
         </div>
     );
+};
+
+export const VideoGrid: React.FC<VideoGridProps> = ({ videos, onPauseMusic }) => {
+  const [playingVideo, setPlayingVideo] = useState<Video | null>(null);
+  const [filter, setFilter] = useState('全部');
+
+  if (!videos.length) return <div className="flex items-center justify-center h-screen text-slate-500">暂无影视内容</div>;
+
+  // 1. Identify Sections
+  const heroVideo = videos.find(v => v.isVideoPageHero) || videos[0];
+  const remainingVideos = videos.filter(v => v.id !== heroVideo.id);
+
+  // Apply Category Filter
+  const filteredVideos = filter === '全部' 
+    ? remainingVideos 
+    : remainingVideos.filter(v => v.category === filter || v.category?.includes(filter));
+  
+  const carouselVideos = filteredVideos.slice(0, 8);
+  const bentoVideos = filteredVideos.slice(8);
+
+  const handleWatch = (video: Video) => { 
+      if (onPauseMusic) onPauseMusic(); 
+      setPlayingVideo(video); 
+  };
+
+  return (
+    <div className="w-full pb-24 -mt-24">
+      {/* 1. CINEMA HERO (Full Screen) */}
+      <div className="relative w-full h-[90vh] mb-0 group overflow-hidden">
+          <div className="absolute inset-0 pointer-events-none">
+              {heroVideo.videoUrl ? (
+                  <video src={heroVideo.videoUrl} className="w-full h-full object-cover" autoPlay muted loop playsInline /> 
+              ) : (
+                  <img src={heroVideo.coverUrl} className="w-full h-full object-cover" />
+              )}
+              {/* Cinematic Vignette */}
+              <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/20 to-transparent"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-transparent"></div>
+          </div>
+
+          <div className="absolute bottom-0 left-0 w-full p-8 md:p-16 lg:p-24 flex flex-col items-start justify-end h-full z-10 pb-32 max-w-6xl">
+              <div className="flex items-center gap-3 mb-6 animate-fade-in">
+                   <div className="px-3 py-1 bg-white/10 backdrop-blur border border-white/20 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded">
+                       NEXUS CINEMA
+                   </div>
+                   {heroVideo.category && (
+                       <span className="text-cyan-400 text-xs font-bold uppercase tracking-widest border-l border-white/20 pl-3">
+                           {heroVideo.category}
+                       </span>
+                   )}
+              </div>
+              
+              <h1 className="text-5xl md:text-8xl lg:text-9xl font-display font-black text-white leading-[0.85] mb-8 drop-shadow-2xl tracking-tighter mix-blend-overlay opacity-90 line-clamp-2">
+                  {heroVideo.title}
+              </h1>
+
+              <div className="flex flex-col md:flex-row gap-8 items-start max-w-4xl">
+                   <p className="text-slate-200 text-lg md:text-xl font-light leading-relaxed border-l-4 border-cyan-500 pl-6 bg-black/30 backdrop-blur-sm p-4 rounded-r-xl line-clamp-3">
+                       {heroVideo.description || "体验下一代视听合成技术。启用高保真播放引擎。"}
+                   </p>
+                   <div className="flex flex-col gap-1 text-xs font-mono text-slate-400 mt-2 shrink-0">
+                       <span>导演: <span className="text-white">{heroVideo.author}</span></span>
+                       <span>上映: <span className="text-white">2024</span></span>
+                       <span>画质: <span className="text-acid">4K HDR</span></span>
+                   </div>
+              </div>
+
+              <div className="flex items-center gap-6 mt-12">
+                  <button onClick={() => handleWatch(heroVideo)} className="group relative px-10 py-5 bg-white text-black font-bold text-lg uppercase tracking-widest rounded-full hover:scale-105 transition-all shadow-[0_0_40px_rgba(255,255,255,0.3)] overflow-hidden">
+                      <span className="relative z-10 flex items-center gap-3"><svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>开始播放</span>
+                      <div className="absolute inset-0 bg-acid transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300 ease-out z-0"></div>
+                  </button>
+                  <button className="px-8 py-5 border border-white/30 text-white font-bold text-sm uppercase tracking-widest rounded-full hover:bg-white/10 backdrop-blur-md transition-all">+ 加入待看</button>
+              </div>
+          </div>
+
+          {/* DYNAMIC ISLAND NAVIGATION (Centered Bottom) */}
+          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-30 w-full max-w-3xl flex justify-center px-4">
+               <div className="flex items-center gap-1 p-1.5 rounded-full bg-black/60 backdrop-blur-2xl border border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.5)] overflow-x-auto max-w-full hide-scrollbar">
+                    {CATEGORY_ITEMS.map(cat => (
+                        <button 
+                            key={cat.name}
+                            onClick={() => setFilter(cat.name)}
+                            className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-all duration-300 group ${
+                                filter === cat.name 
+                                ? 'bg-acid text-black shadow-[0_0_20px_rgba(204,255,0,0.4)] scale-105' 
+                                : 'text-slate-400 hover:text-acid hover:bg-white/5'
+                            }`}
+                        >
+                            <span className={`${filter === cat.name ? 'text-black' : 'text-slate-500 group-hover:text-acid'} transition-colors`}>{cat.icon}</span>
+                            <span>{cat.name}</span>
+                        </button>
+                    ))}
+               </div>
+          </div>
+      </div>
+
+      <InteractiveCarousel videos={carouselVideos} onWatch={handleWatch} />
+      <BentoVideoGrid videos={bentoVideos} onWatch={handleWatch} />
+      {playingVideo && <CustomVideoPlayer video={playingVideo} onClose={() => setPlayingVideo(null)} />}
+    </div>
+  );
 };
