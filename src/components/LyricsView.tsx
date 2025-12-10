@@ -1,4 +1,6 @@
 
+// src/components/LyricsView.tsx
+
 import React, { useEffect, useRef, useState } from 'react';
 
 interface LyricsViewProps {
@@ -61,26 +63,19 @@ export const LyricsView: React.FC<LyricsViewProps> = ({
   useEffect(() => {
     if (parsedLyrics.length === 0) return;
     
-    // Find the current line based on time
-    let index = parsedLyrics.findIndex(l => l.time > currentTime) - 1;
-    if (index < 0) {
-        // If we haven't reached the first line yet, or if findIndex returned -1 (meaning all lines are past, so take last one)
-        // If findIndex returns -1 because ALL times are greater, it means we are at start (-1 - 1 = -2). 
-        // If findIndex returns -1 because NO times are greater (end of song), it returns -1. Wait.
-        // findIndex returns -1 if NO element satisfies condition (so all lines are effectively "before" or "current").
-        // In that case index should be length - 1.
-        
-        // Let's use a simpler loop for robustness
-        index = 0;
-        for (let i = 0; i < parsedLyrics.length; i++) {
-            if (currentTime >= parsedLyrics[i].time) {
-                index = i;
-            } else {
-                break;
-            }
+    // Improved syncing logic: find the last line where line.time <= currentTime
+    let index = -1;
+    for (let i = 0; i < parsedLyrics.length; i++) {
+        if (currentTime >= parsedLyrics[i].time) {
+            index = i;
+        } else {
+            break;
         }
     }
-    setActiveIndex(index);
+    // Only update if changed
+    if (index !== activeIndex) {
+        setActiveIndex(index);
+    }
   }, [currentTime, parsedLyrics]);
 
   // Auto Scroll
@@ -93,72 +88,84 @@ export const LyricsView: React.FC<LyricsViewProps> = ({
       }
   }, [activeIndex]);
 
+  // Common UI Wrapper
+  const Wrapper = ({ children }: { children: React.ReactNode }) => (
+      <div className="fixed inset-0 z-[120] bg-[#050505] flex flex-col animate-fade-in overflow-hidden">
+          {/* Moving Mesh Gradient Background */}
+          <div className="absolute inset-0 z-0 opacity-40 pointer-events-none">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-900/40 via-black to-blue-900/40 animate-aurora"></div>
+                <img src={coverUrl} className="w-full h-full object-cover blur-[150px] opacity-60 mix-blend-screen" />
+                <div className="absolute inset-0 bg-black/50"></div>
+          </div>
+          
+          {/* Content */}
+          <div className="relative z-10 flex flex-col h-full">
+              {children}
+          </div>
+      </div>
+  );
+
+  // Close Button
+  const CloseBtn = () => (
+      <button onClick={onClose} className="w-12 h-12 rounded-full bg-white/5 hover:bg-white/20 flex items-center justify-center transition-colors backdrop-blur-md border border-white/5 absolute top-6 right-6 z-50">
+          <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+      </button>
+  );
+
   if (!lyrics && parsedLyrics.length === 0) {
-      // Fallback for no lyrics
       return (
-        <div className="fixed inset-0 z-[120] bg-black/90 backdrop-blur-3xl flex flex-col items-center justify-center animate-fade-in">
-             <div className="absolute inset-0 z-0 opacity-30">
-                <img src={coverUrl} className="w-full h-full object-cover blur-[100px]" />
-            </div>
-            <button onClick={onClose} className="absolute top-8 right-8 text-white/50 hover:text-white z-50">
-                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
-            <div className="relative z-10 text-center p-8">
-                <div className="w-64 h-64 mx-auto rounded-2xl overflow-hidden shadow-2xl mb-8 border border-white/10">
+        <Wrapper>
+            <CloseBtn />
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
+                <div className="w-72 h-72 rounded-xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.6)] mb-8 border border-white/10 animate-float">
                     <img src={coverUrl} className="w-full h-full object-cover" />
                 </div>
-                <h2 className="text-3xl font-display font-bold text-white mb-2">{title}</h2>
-                <p className="text-xl text-slate-400 mb-8">{artist}</p>
-                <p className="text-slate-500 font-mono">暂无歌词数据 / No Lyrics Available</p>
+                <h2 className="text-4xl font-display font-black text-white mb-2 tracking-tight">{title}</h2>
+                <p className="text-xl text-slate-400 mb-8 font-light">{artist}</p>
+                <div className="px-6 py-3 rounded-full bg-white/5 text-slate-500 font-mono text-xs border border-white/5">
+                    LYRICS NOT AVAILABLE
+                </div>
             </div>
-        </div>
+        </Wrapper>
       );
   }
 
   return (
-    <div className="fixed inset-0 z-[120] bg-[#050505] flex flex-col animate-fade-in overflow-hidden">
-        {/* Blurred Background */}
-        <div className="absolute inset-0 z-0 opacity-40 pointer-events-none">
-            <img src={coverUrl} className="w-full h-full object-cover blur-[120px] scale-110" />
-            <div className="absolute inset-0 bg-black/40"></div>
-        </div>
-
+    <Wrapper>
         {/* Header */}
-        <div className="relative z-20 px-8 py-6 flex justify-between items-center">
-             <div className="flex flex-col">
-                 <span className="text-xs font-mono text-lime-400 uppercase tracking-widest mb-1">Now Playing</span>
-                 <h1 className="text-xl font-bold text-white">{title}</h1>
+        <div className="px-8 py-8 flex justify-between items-start">
+             <div className="flex flex-col gap-1">
+                 <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 bg-acid rounded-full animate-pulse"></span>
+                    <span className="text-xs font-mono text-acid uppercase tracking-widest">Now Playing</span>
+                 </div>
+                 <h1 className="text-2xl font-bold text-white tracking-tight">{title}</h1>
+                 <p className="text-lg text-slate-400 font-light">{artist}</p>
              </div>
-             <button onClick={onClose} className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors backdrop-blur-md">
-                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-             </button>
+             <CloseBtn />
         </div>
 
-        {/* Layout: Cover Left (Desktop) / Lyrics Center */}
-        <div className="flex-1 relative z-10 flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-24 p-8 lg:p-16 overflow-hidden">
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-32 p-4 lg:p-16 overflow-hidden">
             
-            {/* Left: Cover Art (Hidden on mobile to save space for lyrics, or make smaller) */}
-            <div className="hidden lg:block shrink-0">
-                <div className="w-[400px] h-[400px] rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10 relative group">
+            {/* Left: Cover Art (Floating) */}
+            <div className="hidden lg:flex flex-col items-center justify-center w-1/3 max-w-[500px]">
+                <div className="w-full aspect-square rounded-3xl overflow-hidden shadow-[0_30px_80px_rgba(0,0,0,0.6)] border border-white/10 relative group">
                     <img src={coverUrl} className="w-full h-full object-cover" />
                     {/* Shine effect */}
                     <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
                 </div>
-                <div className="mt-8 text-center">
-                    <h2 className="text-3xl font-display font-bold text-white mb-2">{title}</h2>
-                    <p className="text-xl text-slate-400 font-light">{artist}</p>
-                </div>
             </div>
 
             {/* Right: Scrolling Lyrics */}
-            <div className="w-full max-w-2xl h-full relative">
+            <div className="w-full lg:w-1/2 h-full max-h-[70vh] relative">
                 {/* Mask gradients for smooth fade */}
                 <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-[#050505]/0 to-transparent z-10 pointer-events-none"></div>
                 <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-[#050505]/0 to-transparent z-10 pointer-events-none"></div>
 
                 <div 
                     ref={containerRef} 
-                    className="h-full overflow-y-auto custom-scrollbar px-4 py-[40vh] space-y-8 text-center"
+                    className="h-full overflow-y-auto custom-scrollbar px-4 py-[40vh] space-y-10 text-center lg:text-left"
                     style={{ scrollBehavior: 'smooth' }}
                 >
                     {parsedLyrics.map((line, i) => {
@@ -168,10 +175,10 @@ export const LyricsView: React.FC<LyricsViewProps> = ({
                                 key={i}
                                 onClick={() => onSeek(line.time)}
                                 className={`
-                                    cursor-pointer transition-all duration-500 ease-out origin-center
+                                    cursor-pointer transition-all duration-700 ease-out origin-left
                                     ${isActive 
-                                        ? 'text-3xl md:text-4xl font-bold text-white scale-100 blur-0 opacity-100' 
-                                        : 'text-xl md:text-2xl font-medium text-slate-500 scale-95 blur-[1px] opacity-40 hover:opacity-70 hover:blur-0'
+                                        ? 'text-3xl md:text-5xl font-bold text-white scale-100 blur-0 opacity-100 leading-tight' 
+                                        : 'text-xl md:text-3xl font-medium text-slate-500/60 blur-[1px] hover:blur-0 hover:text-slate-300 hover:opacity-80'
                                     }
                                 `}
                             >
@@ -179,9 +186,10 @@ export const LyricsView: React.FC<LyricsViewProps> = ({
                             </p>
                         );
                     })}
+                    <div className="h-[20vh]"></div>
                 </div>
             </div>
         </div>
-    </div>
+    </Wrapper>
   );
 };
