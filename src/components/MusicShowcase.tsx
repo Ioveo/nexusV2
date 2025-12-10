@@ -1,3 +1,4 @@
+
 // src/components/MusicShowcase.tsx
 
 import React, { useState, useRef } from 'react';
@@ -49,7 +50,6 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
     const [showLyrics, setShowLyrics] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Audio Refs
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
@@ -69,7 +69,6 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
         return false;
     };
     
-    // --- Audio Logic ---
     const currentTrack = props.tracks.find(t => t.id === playingId);
     
     const handlePlay = (id: string | null) => {
@@ -100,7 +99,6 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
         return track.src;
     };
 
-    // --- ADMIN PANEL ---
     const AdminSidebarItem = ({ id, label, icon }: { id: string, label: string, icon: React.ReactNode }) => (
         <button 
             onClick={() => setActiveTab(id)}
@@ -113,13 +111,11 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
 
     const renderAdminPanel = () => (
          <div className="fixed inset-0 z-[150] bg-[#050505] text-white flex">
-            {/* Sidebar */}
             <div className="w-64 h-full bg-[#0a0a0a] border-r border-white/10 flex flex-col">
                 <div className="p-8 border-b border-white/10">
                     <h1 className="text-2xl font-display font-black text-white tracking-tighter">NEXUS <span className="text-lime-500">CORE</span></h1>
                     <p className="text-[10px] text-slate-500 font-mono mt-2 uppercase tracking-widest">System Administration</p>
                 </div>
-                
                 <div className="flex-1 py-6 overflow-y-auto">
                     <AdminSidebarItem id="dashboard" label="概览仪表盘" icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>} />
                     <AdminSidebarItem id="music" label="音乐资源管理" icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" /></svg>} />
@@ -128,27 +124,21 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
                     <AdminSidebarItem id="gallery" label="视觉画廊管理" icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>} />
                     <AdminSidebarItem id="category" label="全局分类配置" icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>} />
                 </div>
-
                 <div className="p-6 border-t border-white/10">
                     <button onClick={() => setAdminMode(false)} className="w-full py-3 border border-white/20 hover:border-red-500 hover:text-red-500 text-slate-400 font-bold uppercase tracking-widest text-xs transition-colors rounded">
                         退出安全模式
                     </button>
                 </div>
             </div>
-
-            {/* Content Area */}
             <div className="flex-1 bg-[#050505] overflow-y-auto custom-scrollbar relative">
                 <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none"></div>
                 <div className="relative z-10 p-8 md:p-12 max-w-[1600px] mx-auto">
-                    {/* Header */}
                     <div className="mb-8 flex items-end justify-between">
                          <div>
                              <h2 className="text-3xl font-bold text-white mb-2 uppercase">{activeTab.replace('_', ' ')}</h2>
                              <p className="text-slate-500 text-sm font-mono">Administration Module Active</p>
                          </div>
                     </div>
-
-                    {/* Modules */}
                     <div className="animate-fade-in">
                         {activeTab === 'dashboard' && (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -179,9 +169,9 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
         </div>
     );
 
-    // --- HOME VIEW REDESIGNED ---
     const renderHomeView = () => {
-        const heroVideo = props.videos.find(v => v.isHero) || props.videos[0];
+        // Robust fallback: Look for Home Hero -> Look for Video Hero -> Look for First Video -> Empty
+        const heroVideo = props.videos.find(v => v.isHero) || props.videos.find(v => v.isVideoPageHero) || props.videos[0];
         
         return (
             <div className="relative z-10 w-full min-h-screen text-white overflow-hidden pb-32">
@@ -189,39 +179,38 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
                 <div className="fixed inset-0 bg-aurora opacity-30 pointer-events-none z-[-1]"></div>
                 <div className="fixed inset-0 bg-gradient-to-b from-transparent via-[#050505]/50 to-[#050505] z-[-1]"></div>
                 
-                {/* 2. IMMERSIVE HERO */}
-                <div className="relative w-full h-[85vh] flex items-center justify-center pt-20 px-4">
-                    <div className="w-full max-w-[1600px] h-full relative rounded-[3rem] overflow-hidden border border-white/10 shadow-2xl group animate-fade-in">
-                        {/* Hero Content Background */}
-                        <div className="absolute inset-0">
-                            {heroVideo ? (
-                                heroVideo.videoUrl ? 
-                                <video src={heroVideo.videoUrl} className="w-full h-full object-cover scale-105 group-hover:scale-100 transition-transform duration-[2s]" autoPlay muted loop playsInline /> 
-                                : <img src={heroVideo.coverUrl} className="w-full h-full object-cover" />
-                            ) : <div className="w-full h-full bg-slate-900"></div>}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent"></div>
-                        </div>
+                {/* 2. IMMERSIVE HERO (Edge to Edge) */}
+                <div className="relative w-full h-screen mb-8 group overflow-hidden bg-black">
+                    {/* Hero Content Background */}
+                    <div className="absolute inset-0 z-0">
+                        {heroVideo ? (
+                            heroVideo.videoUrl ? 
+                            <video src={heroVideo.videoUrl} className="w-full h-full object-cover" autoPlay muted loop playsInline /> 
+                            : <img src={heroVideo.coverUrl} className="w-full h-full object-cover" />
+                        ) : <div className="w-full h-full bg-slate-900 flex items-center justify-center text-slate-500">NO HERO CONTENT</div>}
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/20 to-transparent"></div>
+                        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-transparent"></div>
+                    </div>
 
-                        {/* Hero Text */}
-                        <div className="absolute bottom-0 left-0 p-12 md:p-24 w-full md:w-2/3 flex flex-col items-start gap-6">
-                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full border border-white/20">
-                                <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-                                <span className="text-xs font-bold uppercase tracking-widest">Featured Premiere</span>
-                            </div>
-                            <h1 className="text-6xl md:text-8xl font-display font-black leading-none tracking-tighter drop-shadow-lg">
-                                {heroVideo?.title || "NEXUS AUDIO"}
-                            </h1>
-                            <p className="text-lg md:text-xl text-slate-200 font-light max-w-xl leading-relaxed glass-panel p-4 rounded-xl border-l-4 border-acid backdrop-blur-sm bg-black/30">
-                                {heroVideo?.description || "Experience the next generation of audio-visual synthesis."}
-                            </p>
-                            <div className="flex items-center gap-4 mt-4">
-                                <button onClick={() => props.onNavigate('video')} className="px-8 py-4 bg-white text-black font-bold uppercase tracking-widest rounded-xl hover:bg-acid hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,255,255,0.3)]">
-                                    立即观看
-                                </button>
-                                <button onClick={() => props.onNavigate('music')} className="px-8 py-4 bg-black/30 backdrop-blur-md border border-white/30 text-white font-bold uppercase tracking-widest rounded-xl hover:bg-white/10 transition-all">
-                                    探索更多
-                                </button>
-                            </div>
+                    {/* Hero Text */}
+                    <div className="absolute bottom-0 left-0 p-8 md:p-16 lg:p-24 w-full md:w-2/3 flex flex-col items-start gap-6 pb-32 z-10">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full border border-white/20">
+                            <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                            <span className="text-xs font-bold uppercase tracking-widest">全站首映</span>
+                        </div>
+                        <h1 className="text-6xl md:text-8xl font-display font-black leading-none tracking-tighter drop-shadow-2xl mix-blend-overlay opacity-90 line-clamp-2">
+                            {heroVideo?.title || "NEXUS AUDIO"}
+                        </h1>
+                        <p className="text-lg md:text-xl text-slate-200 font-light max-w-xl leading-relaxed border-l-4 border-acid pl-6 bg-black/20 backdrop-blur-sm p-4 rounded-r-xl line-clamp-3">
+                            {heroVideo?.description || "体验下一代视听合成技术。"}
+                        </p>
+                        <div className="flex items-center gap-4 mt-4">
+                            <button onClick={() => props.onNavigate('video')} className="px-8 py-4 bg-white text-black font-bold uppercase tracking-widest rounded-xl hover:bg-acid hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,255,255,0.3)]">
+                                立即观看
+                            </button>
+                            <button onClick={() => props.onNavigate('music')} className="px-8 py-4 bg-black/30 backdrop-blur-md border border-white/30 text-white font-bold uppercase tracking-widest rounded-xl hover:bg-white/10 transition-all">
+                                探索更多
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -251,8 +240,6 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
 
                 {/* 4. CONTENT SWIMLANES */}
                 <div className="relative z-20 max-w-[1800px] mx-auto space-y-32 px-4 md:px-12 mt-32">
-                    
-                    {/* Latest Music */}
                     <section>
                          <div className="flex items-end justify-between mb-12 border-b border-white/10 pb-4">
                             <div>
@@ -264,7 +251,6 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
                         <MusicGrid tracks={props.tracks.slice(0, 10)} onPlay={handlePlay} playingId={playingId} />
                     </section>
 
-                    {/* Articles & Gallery Split */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24">
                         <section className="bg-white/5 border border-white/5 rounded-3xl p-8 hover:border-cyan-500/30 transition-colors group">
                             <SectionHeader title="Editorial" sub="Deep_Dive" color="cyber" onMore={() => props.onNavigate('article')} />
@@ -281,7 +267,6 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
                         </section>
                     </div>
 
-                    {/* Tools CTA */}
                     <section className="relative rounded-[3rem] overflow-hidden bg-gradient-to-r from-purple-900/40 to-blue-900/40 border border-white/10 p-12 md:p-24 text-center">
                         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none"></div>
                         <h2 className="text-4xl md:text-7xl font-display font-black mb-8">CREATE WITH AI</h2>
@@ -302,23 +287,19 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
         );
     };
 
-    // --- ROOT RENDER ---
     return (
         <div className={`min-h-screen bg-[#050505] text-white ${adminMode ? '' : 'pb-0'}`}>
             <AdminLoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} onLogin={handleLoginSubmit} />
-            
-            {/* Navbar */}
             {!adminMode && !readingArticle && (
                 <Navbar 
                     onNavigate={props.onNavigate} 
                     onAdmin={handleAdminClick} 
                     onSettings={props.onOpenSettings} 
                     currentView={props.currentView} 
-                    transparent={true} // Always transparent for new layout
+                    transparent={true} 
                 />
             )}
 
-            {/* Content Switcher */}
             {adminMode ? renderAdminPanel() : (
                 readingArticle ? (
                     <ArticleView 
@@ -353,7 +334,6 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
                 )
             )}
 
-            {/* GLOBAL AUDIO */}
             {currentTrack && (
                 <audio 
                     ref={audioRef} 
@@ -369,7 +349,6 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
                 />
             )}
 
-            {/* Global Players */}
             {!adminMode && (
                 <>
                     <GlobalPlayer 
