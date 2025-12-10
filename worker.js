@@ -64,6 +64,30 @@ export default {
             }
         }
 
+        // K. LIST STORAGE FILES (NEW)
+        if (url.pathname === '/api/storage/list' && request.method === 'GET') {
+            checkAuth();
+            if (!env.SONIC_BUCKET) return new Response('R2 Not Configured', { status: 500 });
+            
+            // Limit to recent 100 files for performance
+            const options = {
+                limit: 100,
+                include: ['customMetadata', 'httpMetadata'],
+            };
+            
+            const listed = await env.SONIC_BUCKET.list(options);
+            
+            // Transform for frontend
+            const files = listed.objects.map(obj => ({
+                key: obj.key,
+                size: obj.size,
+                uploaded: obj.uploaded,
+                httpMetadata: obj.httpMetadata
+            }));
+
+            return new Response(JSON.stringify({ files }), { headers: debugHeaders });
+        }
+
         // A. TRACKS
         if (url.pathname === '/api/tracks') {
             if (request.method === 'GET') {
