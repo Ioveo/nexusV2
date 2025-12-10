@@ -40,6 +40,20 @@ export const storageService = {
       }
   },
 
+  async listFiles(): Promise<any[]> {
+      try {
+          const res = await fetch(`${API_BASE}/api/storage/list`, {
+              headers: { 'x-admin-password': localStorage.getItem('admin_password') || '' }
+          });
+          if (!res.ok) return [];
+          const data = await res.json();
+          return data.files || [];
+      } catch (e) {
+          console.warn("List Files Error", e);
+          return [];
+      }
+  },
+
   // ... [Get/Save methods for KV data remain same] ...
   
   async getTracks(): Promise<GalleryTrack[]> {
@@ -146,7 +160,6 @@ export const storageService = {
             const chunk = file.slice(start, end);
             const partNumber = i + 1;
 
-            // Using fetch for simplicity in loop, but XHR could be used for finer chunk progress
             const partRes = await fetch(`${API_BASE}/api/upload/mp/part?uploadId=${uploadId}&key=${key}&partNumber=${partNumber}`, {
                 method: 'PUT',
                 headers: { 'x-admin-password': pwd },
