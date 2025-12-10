@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { GalleryTrack } from '../types';
 import { storageService } from '../services/storageService';
+import { FileSelectorModal } from './Common';
 
 interface MusicManagerProps {
   tracks: GalleryTrack[];
@@ -27,9 +28,9 @@ export const MusicManager: React.FC<MusicManagerProps> = ({ tracks, onAdd, onDel
       inputValue: '', lyrics: '', audioFile: null as File | null, isHero: false, isUploading: false
   });
   
-  // Progress & Status
   const [uploadProgress, setUploadProgress] = useState(0);
   const [r2Status, setR2Status] = useState<{ok: boolean, msg: string} | null>(null);
+  const [showFileSelector, setShowFileSelector] = useState(false); // New state
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -37,7 +38,6 @@ export const MusicManager: React.FC<MusicManagerProps> = ({ tracks, onAdd, onDel
   const [auditionId, setAuditionId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Check R2 on mount
   useEffect(() => {
       storageService.checkR2Status().then(setR2Status);
   }, []);
@@ -81,10 +81,14 @@ export const MusicManager: React.FC<MusicManagerProps> = ({ tracks, onAdd, onDel
                       state.audioFile,
                       (pct) => setUploadProgress(pct)
                   );
-              } else if (mode === 'create') {
-                  throw new Error("请选择文件");
+              } else if (mode === 'create' && !state.inputValue) {
+                  // If creating and no file AND no inputValue (from selector), throw error
+                  throw new Error("请选择音频文件 (上传或从库中选择)");
               } else {
-                   finalSrc = tracks.find(t => t.id === editingId)?.src || '';
+                   // If editing and no new file, keep existing. If create and have inputValue, use it.
+                   if (mode === 'edit' && !state.inputValue) {
+                       finalSrc = tracks.find(t => t.id === editingId)?.src || '';
+                   }
               }
           } else if (state.sourceType === 'netease') {
               const match = state.inputValue.match(/id=(\d+)/) || state.inputValue.match(/\/song\/(\d+)/);
@@ -93,6 +97,7 @@ export const MusicManager: React.FC<MusicManagerProps> = ({ tracks, onAdd, onDel
               else if (mode === 'create') throw new Error("无效 ID");
           }
 
+          // Auto Fill Cover
           let cover = state.cover || getRandomCover();
           
           const trackData: GalleryTrack = {
@@ -113,7 +118,7 @@ export const MusicManager: React.FC<MusicManagerProps> = ({ tracks, onAdd, onDel
               alert("更新成功");
           } else {
               onAdd(trackData);
-              alert("发布成功");
+              alert("发布成功" + (!state.cover ? " (自动生成封面)" : ""));
           }
           resetForm();
       } catch (e: any) { alert(e.message); } 
@@ -127,6 +132,13 @@ export const MusicManager: React.FC<MusicManagerProps> = ({ tracks, onAdd, onDel
 
   return (
     <div className="max-w-5xl space-y-8">
+        <FileSelectorModal 
+            isOpen={showFileSelector} 
+            onClose={() => setShowFileSelector(false)} 
+            filter="audio"
+            onSelect={(url) => setState(prev => ({...prev, inputValue: url, sourceType: 'local'}))}
+        />
+
         <div className="flex justify-between items-center">
             <div className="flex items-center gap-4">
                 <h3 className="text-2xl font-bold hidden md:block">音乐管理 ({tracks.length})</h3>
@@ -158,10 +170,22 @@ export const MusicManager: React.FC<MusicManagerProps> = ({ tracks, onAdd, onDel
             </div>
             
             {state.sourceType === 'local' ? 
-            <div className="space-y-2">
-                <input type="file" ref={fileInputRef} onChange={e => e.target.files && setState({...state, audioFile: e.target.files[0]})} className="text-sm text-slate-400"/>
-                {mode === 'edit' && <p className="text-[10px] text-lime-400">若不选择新文件，将保留原音频。</p>}
-                <p className="text-[10px] text-slate-500">最大限制 100MB</p>
+            <div className="space-y-2 p-3 bg-black rounded border border-white/10">
+                <div className="flex gap-3">
+                    <div className="flex-1">
+                        <p className="text-[10px] text-slate-500 mb-1 uppercase font-bold">上传新音频</p>
+                        <input type="file" ref={fileInputRef} onChange={e => e.target.files && setState({...state, audioFile: e.target.files[0]})} className="text-sm text-slate-400 w-full"/>
+                    </div>
+                    <div className="w-px bg-white/10"></div>
+                    <div className="flex-1 flex flex-col justify-end">
+                        <p className="text-[10px] text-slate-500 mb-1 uppercase font-bold">选择已有音频</p>
+                        <button onClick={() => setShowFileSelector(true)} className="w-full py-1.5 bg-white/10 hover:bg-white/20 rounded text-sm text-white">媒体库</button>
+                    </div>
+                </div>
+                {state.inputValue && !state.audioFile && (
+                    <p className="text-xs text-lime-400 mt-2 truncate">已选择: {state.inputValue}</p>
+                )}
+                {mode === 'edit' && !state.inputValue && !state.audioFile && <p className="text-[10px] text-lime-400">保留原音频</p>}
             </div> :
             <input type="text" placeholder="链接或ID" value={state.inputValue} onChange={e => setState({...state, inputValue: e.target.value})} className="w-full bg-black border border-white/10 p-3 rounded-lg text-white font-mono text-sm"/>
             }
@@ -172,7 +196,7 @@ export const MusicManager: React.FC<MusicManagerProps> = ({ tracks, onAdd, onDel
                         <img src={state.cover} className="w-8 h-8 rounded object-cover" />
                         <span className="text-lime-500 text-xs">封面已就绪 (点击更换)</span>
                     </div>
-                ) : <span className="text-xs text-slate-500">点击上传封面 (自动随机)</span>}
+                ) : <span className="text-xs text-slate-500">点击上传封面 (留空将自动随机生成)</span>}
                 <input type="file" ref={coverInputRef} onChange={async (e) => {
                     if(e.target.files) {
                         try {
