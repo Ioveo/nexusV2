@@ -453,7 +453,6 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
                     {/* SECTIONS */}
                     <div className="space-y-32">
                         
-                        {/* 1. CINEMA WIDGET */}
                         <section className="relative">
                             <Marquee text="CINEMA EXPERIENCE" opacity={0.05} />
                             <div className="relative z-10 -mt-20">
@@ -465,7 +464,6 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
                             </div>
                         </section>
 
-                        {/* 2. MUSIC WIDGET */}
                         <section className="relative">
                             <Marquee text="SONIC ARCHITECTURE" reverse opacity={0.05} />
                             <div className="relative z-10 -mt-20">
@@ -474,7 +472,6 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
                             </div>
                         </section>
 
-                        {/* 3. MIXED WIDGETS */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
                             <section>
                                 <SectionHeader title="深度专栏" sub="Editorial_Hub" color="cyber" onMore={() => props.onNavigate('article')} />
@@ -524,7 +521,9 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
                                 src={currentTrack?.coverUrl} 
                                 className={`w-full h-full object-cover opacity-80 ${playingId ? 'animate-[spin_8s_linear_infinite]' : ''}`} 
                              />
+                             {/* Vinyl Glint */}
                              <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent rounded-full pointer-events-none"></div>
+                             {/* Center Hole */}
                              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-[#111] rounded-full border border-white/20"></div>
                          </div>
                          
@@ -582,9 +581,10 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
         </div>
     );
 
+    if (props.currentView === 'video') return <SimpleLayout title="影视中心" subtitle="Cinema_Database" color="orange"><VideoGrid videos={props.videos} onPauseMusic={handlePauseMusic} /></SimpleLayout>;
     if (props.currentView === 'music') return <SimpleLayout title="精选音乐" subtitle="Sonic_Archive" color="acid"><MusicGrid tracks={props.tracks} onPlay={handlePlay} playingId={playingId} /></SimpleLayout>;
     if (props.currentView === 'article') return <SimpleLayout title="深度专栏" subtitle="Editorial_Hub" color="cyber"><ArticleGrid articles={props.articles} onRead={setReadingArticle} /></SimpleLayout>;
     if (props.currentView === 'gallery') return <SimpleLayout title="视觉画廊" subtitle="Visual_Arts" color="neon"><GalleryGrid images={props.gallery} /></SimpleLayout>;
 
     return null; // Should not reach here
-}
+};
