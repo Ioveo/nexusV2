@@ -524,9 +524,7 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
                                 src={currentTrack?.coverUrl} 
                                 className={`w-full h-full object-cover opacity-80 ${playingId ? 'animate-[spin_8s_linear_infinite]' : ''}`} 
                              />
-                             {/* Vinyl Glint */}
                              <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent rounded-full pointer-events-none"></div>
-                             {/* Center Hole */}
                              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-[#111] rounded-full border border-white/20"></div>
                          </div>
                          
