@@ -27,7 +27,7 @@ export const VideoManager: React.FC<VideoManagerProps> = ({ videos, categories, 
   });
   
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [r2Status, setR2Status] = useState<{ok: boolean, msg: string} | null>(null);
+  const [r2Status, setR2Status] = useState<{ok: boolean, message: string} | null>(null);
   const [showFileSelector, setShowFileSelector] = useState(false); // New state
 
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -150,6 +150,13 @@ export const VideoManager: React.FC<VideoManagerProps> = ({ videos, categories, 
       } catch(e) { console.error(e); }
   };
 
+  // Helper to format path display
+  const formatPathDisplay = (path: string) => {
+      if (!path) return '';
+      if (path.startsWith('/api/file/')) return 'Video Resource Ready (R2)';
+      return path;
+  };
+
   return (
     <div className="max-w-5xl space-y-8">
       <FileSelectorModal 
@@ -165,7 +172,7 @@ export const VideoManager: React.FC<VideoManagerProps> = ({ videos, categories, 
               {r2Status && (
                   <div className={`px-2 py-1 rounded text-[10px] font-mono border flex items-center gap-1 ${r2Status.ok ? 'bg-lime-500/10 border-lime-500/30 text-lime-500' : 'bg-red-500/10 border-red-500/30 text-red-500'}`}>
                       <div className={`w-1.5 h-1.5 rounded-full ${r2Status.ok ? 'bg-lime-500' : 'bg-red-500'}`}></div>
-                      R2: {r2Status.ok ? 'Ready' : r2Status.msg}
+                      R2: {r2Status.ok ? 'Ready' : r2Status.message}
                   </div>
               )}
           </div>
@@ -214,7 +221,7 @@ export const VideoManager: React.FC<VideoManagerProps> = ({ videos, categories, 
                       </div>
                   </div>
                   {state.videoUrl && !videoInputRef.current?.value && (
-                      <p className="text-xs text-orange-400 mt-2">已选择: {state.videoUrl}</p>
+                      <p className="text-xs text-orange-400 mt-2">资源就绪: {formatPathDisplay(state.videoUrl)}</p>
                   )}
                   <p className="text-[10px] text-slate-500 pt-1">支持超大文件分片上传</p>
               </div>
@@ -242,6 +249,7 @@ export const VideoManager: React.FC<VideoManagerProps> = ({ videos, categories, 
           <label className="flex items-center gap-3 p-3 border border-white/10 rounded cursor-pointer hover:bg-white/5 transition-colors">
                 <input type="checkbox" checked={state.isHero} onChange={e => setState({...state, isHero: e.target.checked})} className="accent-orange-500 w-4 h-4"/>
                 <div className="flex flex-col">
+                    <span className="text-sm font-bold text-white">设为主推视频 (Hero Track)</span>
                     <span className="text-sm font-bold text-white">设为主推视频 (Hero Track)</span>
                     <span className="text-[10px] text-slate-500">选中后，该视频将占据首页和影视中心顶部大屏 (会自动替换旧的主推)。</span>
                 </div>
