@@ -244,8 +244,25 @@ export default {
           
           const rangeHeader = request.headers.get('range');
           
-          // Use R2's native range handling to get the chunk
-          // Removed 'onlyIf' which can cause issues if ETags mismatch during streaming
+          // IMPORTANT: Handle HEAD requests (Browsers often send this first to check Content-Length/Type)
+          if (request.method === 'HEAD') {
+             const object = await env.SONIC_BUCKET.head(key);
+             if (!object) return new Response('Not Found', { status: 404, headers: corsHeaders });
+             
+             const headers = new Headers();
+             const storedType = object.httpMetadata?.contentType;
+             const correctType = getMimeType(key, storedType);
+             
+             headers.set('Content-Type', correctType);
+             headers.set('Content-Length', object.size.toString());
+             headers.set('Accept-Ranges', 'bytes');
+             headers.set('ETag', object.httpEtag);
+             Object.keys(corsHeaders).forEach(k => headers.set(k, corsHeaders[k]));
+             
+             return new Response(null, { headers, status: 200 });
+          }
+
+          // GET Request
           const object = await env.SONIC_BUCKET.get(key, {
               range: rangeHeader ? request.headers : undefined,
           });
@@ -264,23 +281,18 @@ export default {
           if (object.httpEtag) headers.set('etag', object.httpEtag);
           headers.set('Accept-Ranges', 'bytes'); 
           
-          // CORS
+          // CORS - CRITICAL: Must be applied to file responses for AudioContext to work
           Object.keys(corsHeaders).forEach(k => headers.set(k, corsHeaders[k]));
           headers.set('Cache-Control', 'public, max-age=31536000');
 
           // Handle Range Response (206 Partial Content)
           if (rangeHeader && object.range) {
-              // R2 object.range contains { offset: number, length: number }
-              // It does NOT contain 'end'. We must calculate it.
               const start = object.range.offset;
               const length = object.range.length;
               const end = start + length - 1; 
               const total = object.size;
               
-              // Standard Content-Range format: bytes start-end/total
               headers.set('Content-Range', `bytes ${start}-${end}/${total}`);
-              
-              // Content-Length for this response is the CHUNK size, not total size
               headers.set('Content-Length', length.toString());
               
               return new Response(object.body, { 
