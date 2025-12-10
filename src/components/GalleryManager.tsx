@@ -65,9 +65,7 @@ export const GalleryManager: React.FC<GalleryManagerProps> = ({ images, onUpdate
     
     try {
       await storageService.saveGallery(updated); 
-      if (imgToDelete?.url && imgToDelete.url.includes('/api/file/')) {
-        await storageService.deleteFile(imgToDelete.url);
-      }
+      // Removed: await storageService.deleteFile(...)
     } catch (e) {
       console.error("Delete sync error", e);
     }
