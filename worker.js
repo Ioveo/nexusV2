@@ -223,16 +223,14 @@ export default {
           return new Response(JSON.stringify({ url: fileUrl }), { headers: debugHeaders });
         }
 
-        // E. SERVE FILE (ROBUST STREAMING FIX)
+        // E. SERVE FILE with Range Support (CRITICAL FIX FOR PLAYBACK)
         if (url.pathname.startsWith('/api/file/')) {
           const key = url.pathname.split('/api/file/')[1];
           if (!env.SONIC_BUCKET) return new Response('R2 Not Configured', { status: 500 });
           
           const rangeHeader = request.headers.get('range');
           
-          // Request from R2
-          // Note: R2 `get` behavior with `range` returns the specific chunk in `object.body`.
-          // `object.size` returns the FULL object size.
+          // Use R2's native range handling to get the chunk
           const object = await env.SONIC_BUCKET.get(key, {
               range: rangeHeader ? request.headers : undefined,
               onlyIf: rangeHeader ? request.headers : undefined,
@@ -247,24 +245,26 @@ export default {
           object.writeHttpMetadata(headers);
           
           headers.set('etag', object.httpEtag);
-          headers.set('Accept-Ranges', 'bytes'); // Critical for streaming
+          headers.set('Accept-Ranges', 'bytes'); 
           
           // CORS
           Object.keys(corsHeaders).forEach(k => headers.set(k, corsHeaders[k]));
           headers.set('Cache-Control', 'public, max-age=31536000');
 
-          // Handle Range Response (206)
+          // Handle Range Response (206 Partial Content)
           if (rangeHeader && object.range) {
+              // R2 object.range contains { offset: number, length: number }
+              // It does NOT contain 'end'. We must calculate it.
               const start = object.range.offset;
-              const end = object.range.end;
+              const length = object.range.length;
+              const end = start + length - 1; 
               const total = object.size;
               
-              // Correct format: "bytes start-end/total"
+              // Standard Content-Range format: bytes start-end/total
               headers.set('Content-Range', `bytes ${start}-${end}/${total}`);
               
-              // Correct Content-Length is the size of the CHUNK sent
-              const chunkLength = end - start + 1;
-              headers.set('Content-Length', chunkLength.toString());
+              // Content-Length for this response is the CHUNK size, not total size
+              headers.set('Content-Length', length.toString());
               
               return new Response(object.body, { 
                   headers, 
@@ -272,7 +272,7 @@ export default {
               });
           }
 
-          // Handle Full Response (200)
+          // Handle Full Response (200 OK)
           headers.set('Content-Length', object.size.toString());
           return new Response(object.body, { headers, status: 200 });
         }
