@@ -28,7 +28,7 @@ export const VideoManager: React.FC<VideoManagerProps> = ({ videos, categories, 
   
   const [uploadProgress, setUploadProgress] = useState(0);
   const [r2Status, setR2Status] = useState<{ok: boolean, message: string} | null>(null);
-  const [showFileSelector, setShowFileSelector] = useState(false); // New state
+  const [showFileSelector, setShowFileSelector] = useState(false); 
 
   const coverInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
@@ -73,7 +73,6 @@ export const VideoManager: React.FC<VideoManagerProps> = ({ videos, categories, 
           let finalVideoUrl = state.videoUrl;
           
           if (state.sourceType === 'local') {
-              // Only upload if a NEW file is selected via input, otherwise keep existing URL
               if (videoInputRef.current?.files?.[0]) {
                   finalVideoUrl = await storageService.uploadFile(
                       videoInputRef.current.files[0], 
@@ -86,11 +85,7 @@ export const VideoManager: React.FC<VideoManagerProps> = ({ videos, categories, 
               if (!state.videoUrl) throw new Error("请输入视频链接");
           }
 
-          // Auto-fill Cover if empty
-          let finalCover = state.cover;
-          if (!finalCover) {
-              finalCover = getRandomCover();
-          }
+          let finalCover = state.cover || getRandomCover();
 
           const videoData: Video = {
               id: mode === 'edit' && editingId ? editingId : Date.now().toString(),
@@ -138,16 +133,12 @@ export const VideoManager: React.FC<VideoManagerProps> = ({ videos, categories, 
   };
 
   const handleDelete = async (id: string) => {
-      if (!confirm("确定删除此视频信息？(源文件将保留)")) return;
+      if (!confirm("确定删除此视频信息？")) return;
       const updated = videos.filter(v => v.id !== id);
       onUpdate(updated);
-      try {
-          await storageService.saveVideos(updated);
-          // Removed: await storageService.deleteFile(...) to prevent deleting R2 source
-      } catch(e) { console.error(e); }
+      try { await storageService.saveVideos(updated); } catch(e) { console.error(e); }
   };
 
-  // Helper to format path display
   const formatPathDisplay = (path: string) => {
       if (!path) return '';
       if (path.startsWith('/api/file/')) return '云端资源 (R2 Direct Link)';
@@ -155,7 +146,7 @@ export const VideoManager: React.FC<VideoManagerProps> = ({ videos, categories, 
   };
 
   return (
-    <div className="max-w-5xl space-y-8">
+    <div className="max-w-7xl mx-auto space-y-8">
       <FileSelectorModal 
         isOpen={showFileSelector} 
         onClose={() => setShowFileSelector(false)} 
@@ -163,128 +154,127 @@ export const VideoManager: React.FC<VideoManagerProps> = ({ videos, categories, 
         onSelect={(url) => setState(prev => ({...prev, videoUrl: url, sourceType: 'local'}))}
       />
 
-      <div className="flex justify-between items-center">
-          <div className="flex items-center gap-4">
-              <h3 className="text-2xl font-bold">视频管理 ({videos.length})</h3>
-              {r2Status && (
-                  <div className={`px-2 py-1 rounded text-[10px] font-mono border flex items-center gap-1 ${r2Status.ok ? 'bg-lime-500/10 border-lime-500/30 text-lime-500' : 'bg-red-500/10 border-red-500/30 text-red-500'}`}>
-                      <div className={`w-1.5 h-1.5 rounded-full ${r2Status.ok ? 'bg-lime-500' : 'bg-red-500'}`}></div>
-                      R2: {r2Status.ok ? 'Ready' : r2Status.message}
-                  </div>
-              )}
-          </div>
-          {mode === 'edit' && <button onClick={resetForm} className="px-4 py-2 bg-slate-700 rounded text-sm">取消</button>}
-      </div>
-      
-      {/* Form */}
-      <div className="bg-[#1a1a1a] p-6 rounded-xl border border-white/10 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input type="text" placeholder="视频标题" value={state.title} onChange={e => setState({...state, title: e.target.value})} className="bg-black border border-white/20 p-3 rounded text-white"/>
-              <div className="flex gap-2">
-                  <input type="text" placeholder="作者/频道" value={state.author} onChange={e => setState({...state, author: e.target.value})} className="bg-black border border-white/20 p-3 rounded text-white flex-1"/>
-                  <select value={state.categoryId} onChange={e => setState({...state, categoryId: e.target.value})} className="bg-black border border-white/20 p-3 rounded text-white w-40">
-                      <option value="">选择分类...</option>
-                      {videoCats.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-              </div>
-          </div>
-          
-          <input 
-            type="text" 
-            placeholder="广告语 (Hero Ad Slogan) - 仅在首页/Hero位置显示" 
-            value={state.adSlogan} 
-            onChange={e => setState({...state, adSlogan: e.target.value})} 
-            className="w-full bg-black border border-orange-500/30 p-3 rounded text-orange-200 placeholder-orange-500/50 focus:border-orange-500 outline-none"
-          />
-
-          <textarea placeholder="视频简介..." value={state.description} onChange={e => setState({...state, description: e.target.value})} className="w-full bg-black border border-white/20 p-3 rounded text-white h-20 resize-none"/>
-          
-          <div className="flex gap-4">
-             <button onClick={() => setState({...state, sourceType: 'local'})} className={`flex-1 py-2 rounded text-sm border ${state.sourceType === 'local' ? 'bg-white text-black' : 'border-white/10'}`}>本地资源 (上传/库)</button>
-             <button onClick={() => setState({...state, sourceType: 'external'})} className={`flex-1 py-2 rounded text-sm border ${state.sourceType === 'external' ? 'bg-white text-black' : 'border-white/10'}`}>外部链接</button>
-          </div>
-          
-          {state.sourceType === 'local' ? (
-              <div className="space-y-2 p-3 bg-black rounded border border-white/10">
-                  <div className="flex gap-3">
-                      <div className="flex-1">
-                          <p className="text-[10px] text-slate-500 mb-1 uppercase font-bold">选项 A: 上传新文件</p>
-                          <input type="file" ref={videoInputRef} accept="video/*" className="w-full text-slate-400 text-sm"/>
-                      </div>
-                      <div className="w-px bg-white/10"></div>
-                      <div className="flex-1 flex flex-col justify-end">
-                          <p className="text-[10px] text-slate-500 mb-1 uppercase font-bold">选项 B: 选择已有文件</p>
-                          <button onClick={() => setShowFileSelector(true)} className="w-full py-1.5 bg-white/10 hover:bg-white/20 rounded text-sm text-white">从媒体库选择</button>
-                      </div>
-                  </div>
-                  {state.videoUrl && !videoInputRef.current?.value && (
-                      <p className="text-xs text-orange-400 mt-2">资源就绪: {formatPathDisplay(state.videoUrl)}</p>
+      <div className="flex justify-between items-center border-b border-white/10 pb-6">
+          <div>
+              <h3 className="text-3xl font-display font-bold text-white mb-1">影视库管理</h3>
+              <div className="flex items-center gap-2 text-xs text-slate-500 font-mono">
+                  <span>TOTAL: {videos.length}</span>
+                  {r2Status && (
+                      <span className={`flex items-center gap-1 ml-2 ${r2Status.ok ? 'text-lime-500' : 'text-red-500'}`}>
+                          • R2 STORAGE: {r2Status.ok ? 'OK' : 'ERROR'}
+                      </span>
                   )}
-                  <p className="text-[10px] text-slate-500 pt-1">支持超大文件分片上传</p>
               </div>
-          ) : (
-              <input type="text" placeholder="MP4 URL..." value={state.videoUrl} onChange={e => setState({...state, videoUrl: e.target.value})} className="w-full bg-black border border-white/20 p-3 rounded text-white font-mono text-sm"/>
-          )}
-          
-          <div className="p-4 border border-dashed border-white/20 rounded cursor-pointer" onClick={() => coverInputRef.current?.click()}>
-                {state.cover ? (
-                    <div className="flex items-center gap-2">
-                        <img src={state.cover} className="w-16 h-9 rounded object-cover" />
-                        <span className="text-orange-500 text-xs">封面已就绪</span>
-                    </div>
-                ) : <span className="text-xs text-slate-500">上传封面图 (留空将自动随机生成)</span>}
-                <input type="file" ref={coverInputRef} onChange={async (e) => {
-                    if(e.target.files?.[0]) {
-                        try {
-                            const url = await storageService.uploadFile(e.target.files[0]);
-                            setState(p => ({...p, cover: url}));
-                        } catch(e){}
-                    }
-                }} className="hidden"/>
           </div>
-
-          <label className="flex items-center gap-3 p-3 border border-white/10 rounded cursor-pointer hover:bg-white/5 transition-colors">
-                <input type="checkbox" checked={state.isHero} onChange={e => setState({...state, isHero: e.target.checked})} className="accent-orange-500 w-4 h-4"/>
-                <div className="flex flex-col">
-                    <span className="text-sm font-bold text-white">设为主推视频 (Hero Track)</span>
-                    <span className="text-sm font-bold text-white">设为主推视频 (Hero Track)</span>
-                    <span className="text-[10px] text-slate-500">选中后，该视频将占据首页和影视中心顶部大屏 (会自动替换旧的主推)。</span>
-                </div>
-          </label>
-
-          <button onClick={handleSubmit} disabled={state.isUploading} className="w-full py-3 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden">
-              {state.isUploading ? (
-                  <div className="relative z-10 flex items-center justify-center gap-2">
-                      <span>上传中... {Math.round(uploadProgress)}%</span>
-                  </div>
-              ) : (mode === 'edit' ? '保存修改' : '发布视频')}
-              
-              {state.isUploading && (
-                  <div 
-                    className="absolute top-0 left-0 h-full bg-orange-700/50 transition-all duration-300 z-0" 
-                    style={{ width: `${uploadProgress}%` }}
-                  ></div>
-              )}
-          </button>
+          {mode === 'edit' && <button onClick={resetForm} className="px-6 py-2 bg-white/10 text-white rounded-full text-xs font-bold uppercase hover:bg-white/20">取消编辑</button>}
       </div>
       
-      {/* List */}
-      <div className="space-y-2">
+      {/* Editor Form */}
+      <div className="bg-[#111] p-8 rounded-2xl border border-white/10 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none">
+              <svg className="w-64 h-64 text-orange-500" fill="currentColor" viewBox="0 0 24 24"><path d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z"/></svg>
+          </div>
+
+          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8">
+              {/* Left Column */}
+              <div className="lg:col-span-5 space-y-6">
+                   <div 
+                        onClick={() => coverInputRef.current?.click()}
+                        className="aspect-video bg-black/50 border-2 border-dashed border-white/20 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-orange-500/50 hover:bg-orange-500/5 transition-all relative overflow-hidden group/cover"
+                   >
+                       {state.cover ? <img src={state.cover} className="w-full h-full object-cover" /> : (
+                           <div className="text-center">
+                               <span className="text-3xl text-slate-600 block mb-2">🎬</span>
+                               <span className="text-xs font-bold text-slate-500 uppercase">上传视频封面</span>
+                           </div>
+                       )}
+                       <input type="file" ref={coverInputRef} onChange={async (e) => {
+                           if(e.target.files?.[0]) {
+                               const url = await storageService.uploadFile(e.target.files[0]);
+                               setState(p => ({...p, cover: url}));
+                           }
+                       }} className="hidden"/>
+                   </div>
+
+                   <label className="flex items-center gap-3 p-4 bg-white/5 border border-white/10 rounded-xl cursor-pointer hover:bg-orange-500/10 hover:border-orange-500/30 transition-all">
+                        <input type="checkbox" checked={state.isHero} onChange={e => setState({...state, isHero: e.target.checked})} className="accent-orange-500 w-4 h-4"/>
+                        <div className="flex flex-col">
+                            <span className="text-sm font-bold text-white">设为主推 (Hero)</span>
+                            <span className="text-[10px] text-slate-500">在首页顶部大屏展示</span>
+                        </div>
+                  </label>
+              </div>
+
+              {/* Right Column */}
+              <div className="lg:col-span-7 space-y-5">
+                  <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase">视频标题</label>
+                          <input type="text" value={state.title} onChange={e => setState({...state, title: e.target.value})} className="w-full bg-black/50 border border-white/10 p-3 rounded-xl text-white focus:border-orange-500 outline-none" />
+                      </div>
+                      <div className="space-y-2">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase">作者 / 导演</label>
+                          <input type="text" value={state.author} onChange={e => setState({...state, author: e.target.value})} className="w-full bg-black/50 border border-white/10 p-3 rounded-xl text-white focus:border-orange-500 outline-none" />
+                      </div>
+                  </div>
+
+                  <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase">广告语 (Slogan)</label>
+                      <input type="text" value={state.adSlogan} onChange={e => setState({...state, adSlogan: e.target.value})} className="w-full bg-black/50 border border-white/10 p-3 rounded-xl text-orange-300 focus:border-orange-500 outline-none placeholder-slate-700" placeholder="例如: NEXUS 独家首映" />
+                  </div>
+
+                  <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase">分类</label>
+                      <select value={state.categoryId} onChange={e => setState({...state, categoryId: e.target.value})} className="w-full bg-black/50 border border-white/10 p-3 rounded-xl text-white focus:border-orange-500 outline-none appearance-none">
+                          <option value="">选择分类...</option>
+                          {videoCats.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      </select>
+                  </div>
+
+                  <div className="space-y-4 pt-2 border-t border-white/10">
+                      <div className="flex gap-2">
+                          <button onClick={() => setState({...state, sourceType: 'local'})} className={`px-4 py-2 rounded-lg text-xs font-bold uppercase transition-all ${state.sourceType === 'local' ? 'bg-orange-500 text-black' : 'bg-white/5 text-slate-400'}`}>本地上传</button>
+                          <button onClick={() => setState({...state, sourceType: 'external'})} className={`px-4 py-2 rounded-lg text-xs font-bold uppercase transition-all ${state.sourceType === 'external' ? 'bg-orange-500 text-black' : 'bg-white/5 text-slate-400'}`}>外部链接</button>
+                      </div>
+
+                      {state.sourceType === 'local' ? (
+                        <div className="flex gap-4 items-center bg-black/30 p-4 rounded-xl border border-white/10">
+                            <input type="file" ref={videoInputRef} accept="video/*" className="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-orange-500/10 file:text-orange-500 hover:file:bg-orange-500/20"/>
+                            <div className="w-px h-8 bg-white/10"></div>
+                            <button onClick={() => setShowFileSelector(true)} className="text-xs font-bold text-slate-300 hover:text-white">从媒体库选择</button>
+                        </div>
+                      ) : (
+                          <input type="text" value={state.videoUrl} onChange={e => setState({...state, videoUrl: e.target.value})} className="w-full bg-black/50 border border-white/10 p-3 rounded-xl text-white font-mono text-xs focus:border-orange-500 outline-none" placeholder="https://..." />
+                      )}
+                  </div>
+
+                  <button onClick={handleSubmit} disabled={state.isUploading} className="w-full py-4 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-xl transition-all shadow-lg relative overflow-hidden uppercase tracking-widest text-sm">
+                      <span className="relative z-10">{state.isUploading ? `UPLOADING...` : (mode === 'edit' ? '保存更改' : '发布视频')}</span>
+                      {state.isUploading && <div className="absolute top-0 left-0 h-full bg-orange-800 z-0 transition-all" style={{ width: `${uploadProgress}%` }}></div>}
+                  </button>
+              </div>
+          </div>
+      </div>
+      
+      {/* Video List */}
+      <div className="grid grid-cols-1 gap-3">
           {videos.map(v => (
-              <div key={v.id} className={`flex items-center gap-4 p-3 bg-[#1a1a1a] rounded border transition-colors ${v.isHero ? 'border-orange-500/50' : 'border-white/5 hover:border-orange-500/30'}`}>
-                  <div className="relative w-20 h-12 shrink-0">
-                      <img src={v.coverUrl} className="w-full h-full object-cover rounded bg-black" />
-                      {v.isHero && <div className="absolute top-0 left-0 w-full h-full border-2 border-orange-500 rounded pointer-events-none"></div>}
+              <div key={v.id} className="flex items-center gap-4 p-4 bg-[#111] rounded-xl border border-white/5 hover:border-orange-500/50 transition-colors group">
+                  <div className="relative w-24 h-14 shrink-0 rounded overflow-hidden">
+                      <img src={v.coverUrl} className="w-full h-full object-cover" />
+                      {v.isHero && <div className="absolute inset-0 border-2 border-orange-500"></div>}
                   </div>
                   <div className="flex-1 min-w-0">
-                      <div className="font-bold text-white flex items-center gap-2 truncate">
-                          {v.title}
-                          {v.isHero && <span className="text-[9px] bg-orange-500 text-black px-1.5 py-0.5 rounded font-black uppercase tracking-wider">HERO</span>}
+                      <div className="flex items-center gap-2">
+                          <h4 className="font-bold text-white truncate">{v.title}</h4>
+                          {v.isHero && <span className="text-[9px] bg-orange-500 text-black px-1.5 rounded font-black uppercase">HERO</span>}
                       </div>
-                      <div className="text-xs text-slate-500 truncate">{v.category} • {v.author}</div>
+                      <div className="text-xs text-slate-500">{v.category} • {v.author}</div>
                   </div>
-                  <button onClick={() => handleEdit(v)} className="px-3 py-1 bg-white/10 rounded text-xs hover:bg-white/20 transition-colors">编辑</button>
-                  <button onClick={() => handleDelete(v.id)} className="px-3 py-1 bg-red-500/20 text-red-500 rounded text-xs hover:bg-red-500 hover:text-white transition-colors">删除</button>
+                  <div className="flex gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => handleEdit(v)} className="px-3 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded">编辑</button>
+                      <button onClick={() => handleDelete(v.id)} className="px-3 py-1 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white text-xs rounded">删除</button>
+                  </div>
               </div>
           ))}
       </div>
