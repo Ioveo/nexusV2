@@ -29,7 +29,18 @@ export const storageService = {
       }
   },
 
-  // ... [Existing methods for tracks, articles, etc. kept same] ...
+  async checkR2Status(): Promise<{ ok: boolean; message: string }> {
+      try {
+          const res = await fetch(`${API_BASE}/api/health-check`);
+          if (!res.ok) return { ok: false, message: "API Error" };
+          const data = await res.json();
+          return { ok: data.status === 'ok', message: data.message };
+      } catch (e: any) {
+          return { ok: false, message: e.message || "Network Error" };
+      }
+  },
+
+  // ... [Existing methods for tracks, articles, etc.] ...
   
   async getTracks(): Promise<GalleryTrack[]> {
     const res = await fetch(`${API_BASE}/api/tracks`);
@@ -63,7 +74,6 @@ export const storageService = {
     await fetch(`${API_BASE}/api/videos`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(data) });
   },
 
-  // --- CATEGORIES (NEW) ---
   async getCategories(): Promise<Category[]> {
     try {
       const res = await fetch(`${API_BASE}/api/categories`);
@@ -85,18 +95,61 @@ export const storageService = {
     if (!res.ok) throw new Error('Failed to save categories');
   },
 
-  // ... [File upload methods kept same] ...
-  async uploadFile(file: File): Promise<string> {
-    const ext = file.name.split('.').pop();
-    const uniqueKey = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${ext}`;
-    const res = await fetch(`${API_BASE}/api/upload?key=${uniqueKey}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': file.type, 'x-admin-password': localStorage.getItem('admin_password') || '' },
-      body: file
+  // --- OPTIMIZED UPLOAD WITH PROGRESS (XHR) ---
+  uploadFile(file: File, onProgress?: (percent: number) => void): Promise<string> {
+    return new Promise((resolve, reject) => {
+        // 1. Check size limit (Cloudflare Worker standard limit ~100MB)
+        if (file.size > 99 * 1024 * 1024) {
+            reject(new Error("文件过大！Cloudflare Worker 限制最大 100MB。大文件请使用外部链接。"));
+            return;
+        }
+
+        const ext = file.name.split('.').pop();
+        const uniqueKey = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${ext}`;
+        const url = `${API_BASE}/api/upload?key=${uniqueKey}`;
+        const pwd = localStorage.getItem('admin_password') || '';
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('PUT', url, true);
+        
+        // Headers
+        xhr.setRequestHeader('Content-Type', file.type);
+        xhr.setRequestHeader('x-admin-password', pwd);
+
+        // Progress event
+        xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable && onProgress) {
+                const percentComplete = (e.loaded / e.total) * 100;
+                onProgress(percentComplete);
+            }
+        };
+
+        // Completion
+        xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                try {
+                    const data = JSON.parse(xhr.responseText);
+                    resolve(data.url);
+                } catch (e) {
+                    resolve(xhr.responseText); // Fallback
+                }
+            } else {
+                try {
+                    const errData = JSON.parse(xhr.responseText);
+                    reject(new Error(errData.error || `Upload failed: ${xhr.statusText}`));
+                } catch(e) {
+                    reject(new Error(`Upload failed: ${xhr.statusText}`));
+                }
+            }
+        };
+
+        // Error
+        xhr.onerror = () => {
+            reject(new Error("Network Error during upload"));
+        };
+
+        xhr.send(file);
     });
-    if (!res.ok) throw new Error('Upload Failed');
-    const data = await res.json();
-    return data.url;
   },
 
   async deleteFile(url: string): Promise<void> {
