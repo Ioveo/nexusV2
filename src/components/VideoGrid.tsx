@@ -194,7 +194,7 @@ export const VideoGrid: React.FC<VideoGridProps> = ({ videos, onPauseMusic }) =>
               <div className="flex items-center gap-6 mt-12">
                   <button onClick={() => handleWatch(heroVideo)} className="group relative px-10 py-5 bg-white text-black font-bold text-lg uppercase tracking-widest rounded-full hover:scale-105 transition-all shadow-[0_0_40px_rgba(255,255,255,0.3)] overflow-hidden">
                       <span className="relative z-10 flex items-center gap-3"><svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>开始播放</span>
-                      <div className="absolute inset-0 bg-cyan-400 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300 ease-out z-0"></div>
+                      <div className="absolute inset-0 bg-acid transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300 ease-out z-0"></div>
                   </button>
                   <button className="px-8 py-5 border border-white/30 text-white font-bold text-sm uppercase tracking-widest rounded-full hover:bg-white/10 backdrop-blur-md transition-all">+ 加入待看</button>
               </div>
@@ -209,11 +209,11 @@ export const VideoGrid: React.FC<VideoGridProps> = ({ videos, onPauseMusic }) =>
                             onClick={() => setFilter(cat.name)}
                             className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-all duration-300 group ${
                                 filter === cat.name 
-                                ? 'bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.3)] scale-105' 
-                                : 'text-slate-400 hover:text-white hover:bg-white/10'
+                                ? 'bg-acid text-black shadow-[0_0_20px_rgba(204,255,0,0.4)] scale-105' 
+                                : 'text-slate-400 hover:text-acid hover:bg-white/5'
                             }`}
                         >
-                            <span className={`${filter === cat.name ? 'text-black' : 'text-slate-500 group-hover:text-white'} transition-colors`}>{cat.icon}</span>
+                            <span className={`${filter === cat.name ? 'text-black' : 'text-slate-500 group-hover:text-acid'} transition-colors`}>{cat.icon}</span>
                             <span>{cat.name}</span>
                         </button>
                     ))}
