@@ -8,8 +8,9 @@
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, HEAD, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, x-admin-password, Range',
+  'Access-Control-Allow-Headers': 'Content-Type, x-admin-password, Range, Authorization',
   'Access-Control-Expose-Headers': 'Content-Length, Content-Range, Accept-Ranges, ETag',
+  'Access-Control-Max-Age': '86400',
 };
 
 // Helper to guess mime type if R2 metadata is generic
@@ -249,7 +250,7 @@ export default {
              const object = await env.SONIC_BUCKET.head(key);
              if (!object) return new Response('Not Found', { status: 404, headers: corsHeaders });
              
-             const headers = new Headers();
+             const headers = new Headers(corsHeaders);
              const storedType = object.httpMetadata?.contentType;
              const correctType = getMimeType(key, storedType);
              
@@ -257,7 +258,6 @@ export default {
              headers.set('Content-Length', object.size.toString());
              headers.set('Accept-Ranges', 'bytes');
              headers.set('ETag', object.httpEtag);
-             Object.keys(corsHeaders).forEach(k => headers.set(k, corsHeaders[k]));
              
              return new Response(null, { headers, status: 200 });
           }
@@ -265,24 +265,22 @@ export default {
           // GET Request
           const object = await env.SONIC_BUCKET.get(key, {
               range: rangeHeader ? request.headers : undefined,
+              onlyIf: request.headers, 
           });
 
           if (!object) {
             return new Response('Object Not Found', { status: 404, headers: corsHeaders });
           }
 
-          const headers = new Headers();
+          const headers = new Headers(corsHeaders); // ALWAYS start with CORS headers
           
           // Correct MIME type if needed (Audio/Video fix)
           const storedType = object.httpMetadata?.contentType;
           const correctType = getMimeType(key, storedType);
           headers.set('Content-Type', correctType);
           
-          if (object.httpEtag) headers.set('etag', object.httpEtag);
+          if (object.httpEtag) headers.set('ETag', object.httpEtag);
           headers.set('Accept-Ranges', 'bytes'); 
-          
-          // CORS - CRITICAL: Must be applied to file responses for AudioContext to work
-          Object.keys(corsHeaders).forEach(k => headers.set(k, corsHeaders[k]));
           headers.set('Cache-Control', 'public, max-age=31536000');
 
           // Handle Range Response (206 Partial Content)
