@@ -99,6 +99,10 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
         return track.src;
     };
 
+    // Determine if we should use CORS. Netease streams generally do not support CORS headers,
+    // so using 'anonymous' will cause the browser to block playback.
+    const isCorsRestricted = currentTrack?.sourceType === 'netease' || currentTrack?.sourceType === 'qq';
+
     const AdminSidebarItem = ({ id, label, icon }: { id: string, label: string, icon: React.ReactNode }) => (
         <button 
             onClick={() => setActiveTab(id)}
@@ -340,7 +344,7 @@ export const MusicShowcase: React.FC<MusicShowcaseProps> = (props) => {
                     src={getAudioSrc(currentTrack)} 
                     autoPlay 
                     preload="metadata"
-                    crossOrigin="anonymous" 
+                    crossOrigin={isCorsRestricted ? undefined : "anonymous"} 
                     onTimeUpdate={handleTimeUpdate}
                     onEnded={() => setPlayingId(null)}
                     onError={(e) => { console.error("Audio playback error:", e); }} 
