@@ -1,6 +1,7 @@
 // src/components/Common.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { GalleryTrack } from '../types';
+import { storageService } from '../services/storageService';
 
 // --- VISUAL COMPONENTS ---
 
@@ -79,6 +80,68 @@ export const AdminLoginModal = ({ isOpen, onClose, onLogin }: { isOpen: boolean,
                      <button type="submit" className="w-full py-3 bg-acid text-black font-bold uppercase tracking-widest hover:bg-white transition-colors">UNLOCK</button>
                  </form>
              </div>
+        </div>
+    );
+};
+
+export const FileSelectorModal = ({ isOpen, onClose, onSelect, filter }: { isOpen: boolean, onClose: () => void, onSelect: (url: string) => void, filter: 'video' | 'audio' | 'image' }) => {
+    const [files, setFiles] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            setLoading(true);
+            storageService.listFiles().then(data => {
+                // Filter by type roughly based on extension
+                const filtered = data.filter((f: any) => {
+                    const ext = f.key.split('.').pop()?.toLowerCase();
+                    if (filter === 'video') return ['mp4', 'webm', 'mov'].includes(ext);
+                    if (filter === 'audio') return ['mp3', 'wav', 'flac', 'ogg'].includes(ext);
+                    if (filter === 'image') return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
+                    return true;
+                });
+                setFiles(filtered);
+                setLoading(false);
+            });
+        }
+    }, [isOpen, filter]);
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-md animate-fade-in p-4">
+            <div className="w-full max-w-4xl bg-[#111] border border-white/10 rounded-xl flex flex-col h-[80vh]">
+                <div className="p-4 border-b border-white/10 flex justify-between items-center bg-[#1a1a1a] rounded-t-xl">
+                    <h3 className="text-lg font-bold text-white">选择文件 ({filter})</h3>
+                    <button onClick={onClose} className="text-slate-400 hover:text-white">✕</button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                    {loading ? (
+                        <div className="text-center text-slate-500 py-10">Loading Library...</div>
+                    ) : (
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {files.map(f => (
+                                <div 
+                                    key={f.key} 
+                                    onClick={() => { onSelect(`/api/file/${f.key}`); onClose(); }}
+                                    className="p-3 bg-black border border-white/10 rounded-lg hover:border-acid/50 cursor-pointer group transition-all"
+                                >
+                                    <div className="aspect-square bg-[#222] rounded mb-2 flex items-center justify-center overflow-hidden">
+                                        {filter === 'image' ? (
+                                            <img src={`/api/file/${f.key}`} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <span className="text-2xl text-slate-600 font-bold group-hover:text-acid">{f.key.split('.').pop()}</span>
+                                        )}
+                                    </div>
+                                    <p className="text-xs text-slate-300 truncate mb-1">{f.key}</p>
+                                    <p className="text-[10px] text-slate-500 font-mono">{(f.size / 1024 / 1024).toFixed(2)} MB</p>
+                                </div>
+                            ))}
+                            {files.length === 0 && <p className="col-span-full text-center text-slate-500 py-10">暂无相关文件</p>}
+                        </div>
+                    )}
+                </div>
+            </div>
         </div>
     );
 };
